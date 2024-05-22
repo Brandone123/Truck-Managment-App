@@ -2,15 +2,19 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { defineProps, getCurrentInstance, defineEmits } from 'vue'
 import { useTheme } from "vuetify";
+import type { PropType } from 'vue';
 
 import type { filterItem, filterItemOptionObject } from '@/types/layout/table'
+import type { VDataTable } from 'vuetify/components'
+
+type Headers = InstanceType<typeof VDataTable>['headers']
 
 interface SlotProps {
     [key: string]: any; // You can define more specific types for your props
 }
 
 const props = defineProps({
-    headers: Array,
+    headers: [Array] as PropType<Headers>,
     items: {
         type: Array,
         required: true,
@@ -19,7 +23,11 @@ const props = defineProps({
         type: Array<filterItem>,
         default: [],
     },
-    dateSelectorKey: String,
+    dateSelectorKey: {
+        type: [String, null] as PropType<string | null>,
+        required: false,
+        default: null
+    },
     loading: {
         type: Boolean,
         default: false,
@@ -54,20 +62,39 @@ const selectedDate = computed(() => {
 })
 
 const filteredItems = computed(() => {
-    if (!props.dateSelectorKey) {
-        return props.items
-    }
+    // if (!props.dateSelectorKey) {
+    //     return props.items
+    // }
 
     return props.items.filter((item: any) => {
         let dateMatch = true
-        if (!!props.dateSelectorKey && props.dateSelectorKey in item) {
+        if (!!props.dateSelectorKey) {
             // Check if the date key on item matches the selected date
-            dateMatch = item[props.dateSelectorKey] == selectedDate
+            let datePath = props.dateSelectorKey.split(".")
+            let dateItem = item
+            datePath.forEach(datePathItem => {
+                if(item && datePathItem in item){
+                     dateItem = item[datePathItem]
+                }
+            })
+            // dateMatch = item[props.dateSelectorKey] == selectedDate
+            dateMatch = dateItem == selectedDate
         }
 
         return Object.entries(selectedFilterValues.value).every(([key, value]) => {
             // Use the dynamic key and value to filter the array
-            return value != null ? item[key] === value : true
+            if (typeof key == 'string' && value != null) {
+                let path = key?.split('.')
+                let result = item
+                path?.forEach(pathItem => {
+                    if(result && pathItem in result){
+                         result =  result[pathItem]
+                    }
+                })
+                return result == value
+            }
+            return true
+            // return value != null ? item[key] === value : true
         }) && dateMatch
     })
 })
@@ -114,6 +141,10 @@ onMounted(() => {
 onUnmounted(() => {
     // window.removeEventListener('scroll', handleSticky);
 });
+
+defineExpose({
+  selectedItems
+})
 </script>
 
 <template>
@@ -138,19 +169,20 @@ onUnmounted(() => {
 
                         <!-- Let Table Render Filters (Select Fields Only) -->
                         <template v-else-if="filters.length" v-for="filter in (filters as Array<filterItem>)">
-                            <v-select v-if="typeof filter.items[0] == 'string'" clearable flat class="mr-1"
+                            <v-autocomplete v-if="typeof filter.items[0] == 'string'" clearable flat class="mr-1"
                                 :label="filter.title" :items="filter.items" :style="{ width: filter.width || '150px' }"
                                 variant="solo" density="compact" hide-details
-                                v-model="selectedFilterValues[filter.key]"></v-select>
+                                v-model="selectedFilterValues[filter.key]"></v-autocomplete>
 
-                            <v-select v-else clearable flat class="mr-1" :label="filter.title" :items="filter.items"
-                                :style="{ width: filter.width || '150px' }" variant="solo" density="compact" hide-details
-                                item-title="text" item-value="value" v-model="selectedFilterValues[filter.key]"></v-select>
+                            <v-autocomplete v-else clearable flat class="mr-1" :label="filter.title" :items="filter.items"
+                                :style="{ width: filter.width || '150px' }" variant="solo" density="compact"
+                                hide-details item-title="text" item-value="value"
+                                v-model="selectedFilterValues[filter.key]"></v-autocomplete>
                         </template>
                     </div>
                     <div>
-                        <v-text-field flat style="width:300px" variant="solo" prepend-inner-icon="mdi-magnify" hide-details
-                            density="compact" v-model="search" placeholder="Search"></v-text-field>
+                        <v-text-field flat style="width:300px" variant="solo" prepend-inner-icon="mdi-magnify"
+                            hide-details density="compact" v-model="search" placeholder="Search"></v-text-field>
                     </div>
                 </div>
                 <v-card class="rounded-0" flat style="width:100%" v-if="$props.showFooterInHead">
@@ -181,19 +213,22 @@ onUnmounted(() => {
             <slot :name="slot" v-bind="slotProps" v-if="slot != 'loading'"></slot>
         </template>
     </v-data-table>
-</template> 
+</template>
 
 
 <style scoped>
+.v-table.v-data-table {
+    background-color: transparent !important;
+}
 .v-table.v-data-table :deep() td,
 .v-table.v-data-table :deep() th {
-    background-color: white !important;
+    background-color: white;
 }
 
 .v-table.v-data-table,
 .v-table.v-data-table :deep() tr {
-    background-color: transparent !important;
-    margin-bottom: 3px transparent !important;
+    /* background-color: transparent !important; */
+    margin-bottom: 3px #EEEEEE !important;
 }
 
 /* .v-table.v-data-table :deep() tr th:first-child */
@@ -228,9 +263,9 @@ onUnmounted(() => {
 
 /* .top-content {
     position: sticky; */
-    /* Make sticky below app-bar of height 50px */
-    /* top: 48px; */
-    /* z-index: 2; */
+/* Make sticky below app-bar of height 50px */
+/* top: 48px; */
+/* z-index: 2; */
 /* }  */
 
 .v-table.v-data-table:deep() thead tr {
@@ -243,5 +278,15 @@ onUnmounted(() => {
 .v-table.v-data-table :deep() .v-table__wrapper {
     /* overflow: unset; */
     overflow-y: auto;
+}
+
+/* .v-table.v-data-table {
+  transform: scale(0.8);
+  width: calc(100% / 0.8) !important; 
+  transform-origin: top left;
+} */
+
+.v-table.v-data-table :deep() th  {
+  white-space: nowrap !important;
 }
 </style>
