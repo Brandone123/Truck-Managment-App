@@ -7,6 +7,8 @@ const employeeStore = useEmployeeStore()
 const employeeDialog = ref(false)
 const updatingEmployee = ref(false)
 
+const layoutStore = useLayoutStore()
+
 const defaultEmployee = ref<EmployeeInfo>({
     id: null,
     first_name: null,
@@ -31,8 +33,12 @@ const editEmployee = (driver: EmployeeInfo) => {
     employeeDialog.value = true
 }
 
-const deleteEmployee = (template_id: number) => {
+const deleteEmployee = async (template_id: number) => {
+    const { confirm, cancel } = await layoutStore.showConfirmDialog("Are you sure you want to delete")
+
+    if (confirm) {
     employeeStore.deleteEmployee(template_id)
+    }
 }
 
 const updateEmployeeDialog = (value: boolean) => {
