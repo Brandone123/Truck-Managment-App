@@ -11,9 +11,14 @@ import 'vuetify/styles'
 // import {
 //   BlueTheme,
 // } from "@/theme/LightTheme";
+
+import {VCalendar} from 'vuetify/labs/VCalendar'
 export default defineNuxtPlugin((nuxtApp) => {
   const vuetify = createVuetify({
-    components,
+    components : {
+      ...components,
+      VCalendar,
+    },
     directives,
     // theme: {
     //   defaultTheme: "BlueTheme",
