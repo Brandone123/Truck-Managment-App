@@ -1,18 +1,13 @@
 #!/bin/bash
-if [ -d /var/www/html/app-deploy/non-prod/lms-student/ ]; then
-    rm -rf /var/www/html/app-deploy/non-prod/lms-student/
+if [ -d /var/www/html/app-deploy/dev/ ]; then
+    rm -rf /var/www/html/app-deploy/dev/
 fi
-mkdir -vp /var/www/html/app-deploy/non-prod/lms-student
+mkdir -vp /var/www/html/app-deploy/dev/
 
-if ! [ -d /var/www/html/web-apps/non-prod/ ]; then
-    mkdir -vp /var/www/html/web-apps/non-prod
-fi
-
-if ! [ -d /var/www/html/web-apps/non-prod/lms-student-qa/ ]; then
-    mkdir -vp /var/www/html/web-apps/non-prod/lms-student-qa
+if ! [ -d /var/www/html/dev/ ]; then
+    mkdir -vp /var/www/html/dev/
 fi
 
-if ! [ -d /var/www/html/app-deploy/logs/non-prod/ ]; then
-    mkdir -vp /var/www/html/app-deploy/logs/non-prod
+if ! [ -d /var/www/html/dev/moonstar-tms/ ]; then
+    mkdir -vp /var/www/html/dev/moonstar-tms/
 fi
-
