@@ -156,10 +156,10 @@
 </template>
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useLoadStore } from '@/stores/load'
+import { useLoadStore } from '~/stores/settings/dispatch/load'
 import { useLoadTypeStore } from '@/stores/settings/dispatch/load_type'
 import { ref, computed, defineProps, defineEmits, toRefs, watch } from 'vue'
-import type { LoadInfo, StopInfo, CommodityInfo } from '@/types/store/load'
+import type { LoadInfo, StopInfo, CommodityInfo } from '~/types/dispatch/load'
 import { v4 as uuidv4 } from 'uuid';
 
 const emit = defineEmits(['update:show'])

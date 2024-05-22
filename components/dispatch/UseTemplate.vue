@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { storeToRefs } from 'pinia'
-import type { LoadInfo, StopInfo } from '@/types/store/load'
+import type { LoadInfo, StopInfo } from '~/types/dispatch/load'
 import { v4 as uuidv4 } from 'uuid';
 
 const emit = defineEmits(['createLoad'])

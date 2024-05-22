@@ -126,7 +126,7 @@ import { storeToRefs } from 'pinia'
 // import { useZoneStore } from '@/stores/settings/dispatch/zone'
 // import type { StopInfo } from '@/types/store/load'
 import { ref, computed, defineProps, defineEmits, toRefs, watch } from 'vue'
-import type { StopInfo } from '@/types/store/load'
+import type { StopInfo } from '~/types/dispatch/load'
 
 const emit = defineEmits(['update:show', 'addStop', 'editStop'])
 

@@ -176,7 +176,7 @@
 import { ref } from 'vue';
 import { storeToRefs } from 'pinia'
 // import { useLoadTemplateStore } from '@/stores/settings/dispatch/load_template'
-import type { LoadInfo, StopInfo } from '@/types/store/load'
+import type { LoadInfo, StopInfo } from '~/types/dispatch/load'
 const emit = defineEmits(['useTemplate'])
 
 const props = defineProps({

@@ -16,6 +16,13 @@
                 </v-btn>
             </v-toolbar>
             <div id="mapContainer">
+
+                <!-- map loading overlay -->
+
+                <v-overlay id="loader" :model-value="true" contained class="align-center justify-center">
+                    <v-progress-circular :size="70" :width="7" color="primary" indeterminate></v-progress-circular>
+                </v-overlay>
+
                 <!-- map container -->
                 <div id="map"></div>
 
@@ -33,7 +40,8 @@
                 </div>
 
                 <!-- eta display -->
-                <span id="etaDisplay" class="etaDisplay text-h4 font-weight-bold mr-4 mt-4" style="display:none !important">
+                <span id="etaDisplay" class="etaDisplay text-h4 font-weight-bold mr-4 mt-4"
+                    style="display:none !important">
                     ETA: 4hrs 30mins
                 </span>
 
@@ -55,152 +63,258 @@
                                             :updating="updatingStop" :item="editedStop" />
                                     </div>
                                     <v-row>
-                                        <v-col cols="12" md="6" v-if="Array.isArray(loadInfo.stops)">
-                                            <div class="d-flex flex-column">
-                                                <div class="d-flex mt-2 " v-for="(item, i) in loadInfo.stops" :key="i">
-                                                    <div style="width: 90px;">{{ item.available_from }}</div>
-                                                    <div class="d-flex flex-column mx-5">
-                                                        <v-badge color="primary" class="mt-2"
-                                                            :content="String(item.stop_number)"></v-badge>
-                                                        <div v-show="i + 1 < loadInfo.stops.length"
-                                                            style="flex-grow: 1;width:1px;border-left: 2px dotted rgb(var(--v-theme-primary))">
+                                        <v-col cols="12">
+                                            <v-row>
+                                                <v-col cols="12" md="4">
+                                                    <div class="text-subtitle font-weight-bold">Current Driver</div>
+                                                    <v-menu open-on-hover v-model="driverMenu"
+                                                        :close-on-content-click="false" location="end">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn color="primary" variant="text" v-bind="props"
+                                                                class="px-0 text-none text-body-1 font-weight-bold">
+                                                                {{ loadInfo.current_driver?.name }}
+                                                            </v-btn>
+                                                        </template>
+                                                        <v-card style="width: 400px;">
+                                                            <v-card-text>
+                                                                <v-row>
+                                                                    <v-col cols="12" md="4">
+                                                                        <v-avatar size="100">
+                                                                            <v-img
+                                                                                src="https://cdn.vuetifyjs.com/images/john.jpg"
+                                                                                alt="John">
+                                                                                <template v-slot:placeholder>
+                                                                                    <div
+                                                                                        class="d-flex align-center justify-center fill-height">
+                                                                                        <v-progress-circular
+                                                                                            color="grey-lighten-4"
+                                                                                            indeterminate></v-progress-circular>
+                                                                                    </div>
+                                                                                </template>
+                                                                            </v-img>
+                                                                        </v-avatar>
+                                                                    </v-col>
+                                                                    <v-col cols="12" md="8">
+                                                                        <div class="d-flex flex-column mt-3">
+                                                                            <div class="text-subtitle font-weight-bold">
+                                                                                Status
+                                                                            </div>
+                                                                            <div class="text-body-1 text-success">
+                                                                                {{
+                                                                                    loadInfo.current_driver?.samsara_status
+                                                                                }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-card-text>
+                                                        </v-card>
+                                                    </v-menu>
+                                                    <div class="text-caption">{{ loadInfo.current_driver?.phone }}</div>
+                                                </v-col>
+                                                <v-col cols="12" md="4">
+                                                    <div class="text-subtitle font-weight-bold">Current Truck</div>
+                                                    <v-menu open-on-hover v-model="truckMenu"
+                                                        :close-on-content-click="false" location="end">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn color="primary" variant="text" v-bind="props"
+                                                                class="px-0 text-none text-body-1 font-weight-bold">
+                                                                {{ loadInfo.current_truck?.name }}
+                                                            </v-btn>
+                                                        </template>
+                                                        <v-card style="width: 500px;">
+                                                            <v-card-text>
+                                                                <v-row>
+                                                                    <v-col cols="12" md="4">
+                                                                        <v-img max-width="200"
+                                                                            src="https://www.sotrex.com/media/catalog/product/cache/1/thumbnail/225x/17f82f742ffe127f42dca9de82fb58b1/c/n/cn12egj_-_1_1.jpg"
+                                                                            alt="John">
+                                                                            <template v-slot:placeholder>
+                                                                                <div
+                                                                                    class="d-flex align-center justify-center fill-height">
+                                                                                    <v-progress-circular
+                                                                                        color="grey-lighten-4"
+                                                                                        indeterminate></v-progress-circular>
+                                                                                </div>
+                                                                            </template>
+                                                                        </v-img>
+                                                                    </v-col>
+                                                                    <v-col cols="12" md="8">
+                                                                        <div class="d-flex flex-column">
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">VIN
+                                                                                    :</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_truck?.vin
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Model:</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_truck?.model
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Year
+                                                                                    of Manufacture: </span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_truck?.year
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Serial
+                                                                                    Number:</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_truck?.serial
+                                                                                    }}</span>
+                                                                            </p>
+                                                                        </div>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-card-text>
+                                                        </v-card>
+                                                    </v-menu>
+                                                </v-col>
+                                                <v-col cols="12" md="4">
+                                                    <div class="text-subtitle font-weight-bold">Trailer</div>
+                                                    <v-menu open-on-hover v-model="trailerMenu"
+                                                        :close-on-content-click="false" location="end">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn color="primary" variant="text" v-bind="props"
+                                                                class="px-0 text-none text-body-1 font-weight-bold">
+                                                                {{ loadInfo.current_trailer?.name }}
+                                                            </v-btn>
+                                                        </template>
+                                                        <v-card style="width: 500px;">
+                                                            <v-card-text>
+                                                                <v-row>
+                                                                    <v-col cols="12" md="4">
+                                                                        <v-img max-width="200"
+                                                                            src="https://www.sotrex.com/media/catalog/product/cache/1/thumbnail/225x/17f82f742ffe127f42dca9de82fb58b1/c/n/cn12egj_-_1_1.jpg"
+                                                                            alt="John">
+                                                                            <template v-slot:placeholder>
+                                                                                <div
+                                                                                    class="d-flex align-center justify-center fill-height">
+                                                                                    <v-progress-circular
+                                                                                        color="grey-lighten-4"
+                                                                                        indeterminate></v-progress-circular>
+                                                                                </div>
+                                                                            </template>
+                                                                        </v-img>
+                                                                    </v-col>
+                                                                    <v-col cols="12" md="8">
+                                                                        <div class="d-flex flex-column">
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">VIN
+                                                                                    :</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_trailer?.vin
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Model:</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_trailer?.model
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Year
+                                                                                    of Manufacture: </span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_trailer?.year
+                                                                                    }}</span>
+                                                                            </p>
+                                                                            <p>
+                                                                                <span
+                                                                                    class="text-subtitle font-weight-bold mr-2">Serial
+                                                                                    Number:</span>
+                                                                                <span class="text-subtitle-1"
+                                                                                    style="line-height: 1;">{{
+                                                                                        loadInfo.current_trailer?.serial
+                                                                                    }}</span>
+                                                                            </p>
+                                                                        </div>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-card-text>
+                                                        </v-card>
+                                                    </v-menu>
+                                                </v-col>
+                                            </v-row>
+                                        </v-col>
+                                        <v-col cols="12" v-if="Array.isArray(loadInfo.stops)">
+                                            <div class="d-flex align-center" v-for="(stop, i) in loadInfo.stops"
+                                                :key="i">
+                                                <div class="d-flex" style="position:relative;">
+                                                    <div style="position:relative;" class="d-flex justify-center mr-5">
+                                                        <v-avatar style="z-index:2;" color="primary" size="small">
+                                                            <span class="text-h6">{{ stop.sequence }}</span>
+                                                        </v-avatar>
+                                                        <div class="mb-n4" v-if="i < loadInfo.stops.length - 1"
+                                                            style="position:absolute;top:0;bottom:0;width:2px; background-image: repeating-linear-gradient(to bottom, transparent, transparent 5px, rgb(var(--v-theme-primary)) 5px, rgb(var(--v-theme-primary)) 5px 10px);">
                                                         </div>
                                                     </div>
-                                                    <div class="d-flex flex-column">
-                                                        <div variant="text"
-                                                            style="cursor:pointer;color: rgb(var(--v-theme-primary))"
-                                                            class="text-capitalize font-weight-bold" color="primary"
-                                                            @click="editStop(item)">
-                                                            <span class="mr-2">{{ item.address }}</span>
-                                                            <DispatchCheckCallDialog />
-                                                        </div>
-                                                        <div class=" d-flex flex-column ml-5 text-caption">
-                                                            <div>Stop {{ item.stop_number }}</div>
-                                                            <div>Stop {{ item.time_from }} - {{ item.time_to }}</div>
-                                                        </div>
+                                                    <div class="d-flex flex-wrap align-start" style="">
+                                                        <v-card class="mb-5 mr-3" style="min-width:300px;">
+                                                            <v-card-text>
+                                                                <p class="text-body">City: {{ stop.location?.City }}</p>
+                                                                <p class="text-body">State: {{ stop.location?.State }}
+                                                                </p>
+                                                                <p class="text-body">Address:
+                                                                    {{ stop.location?.AddressLine }}
+                                                                </p>
+                                                                <p class="text-body">Date: {{ stop.earliest_date }}</p>
+                                                                <p class="text-body">Time: {{ stop.earliest_time }} -
+                                                                    {{ stop.latest_time }}</p>
+                                                            </v-card-text>
+                                                        </v-card>
+                                                        <v-card flat class="mb-5"
+                                                            style="min-width: 230px;flex-grow:1;display:inline-flex;overflow:visible;">
+                                                            <v-expansion-panels dense>
+                                                                <v-expansion-panel>
+                                                                    <v-expansion-panel-title class="text-primary">
+                                                                        EDI Messages
+                                                                        <v-spacer></v-spacer>
+                                                                        <DispatchCheckCallDialog :loadInfo="loadInfo"
+                                                                            :stopInfo="stop" />
+                                                                    </v-expansion-panel-title>
+                                                                    <v-expansion-panel-text>
+                                                                        <v-list>
+                                                                            <v-list-item @click="" class="px-0"
+                                                                                v-for="(message, index) in getEdiMessages(loadInfo, stop)"
+                                                                                :key="'msg-' + index">
+                                                                                <v-list-item-title>
+                                                                                    {{ message.MessageType }}
+                                                                                    <span class="text-caption">(Status:
+                                                                                        {{ message.Status }})</span>
+                                                                                </v-list-item-title>
+                                                                                <v-list-item-subtitle
+                                                                                    class="text-caption">
+                                                                                    {{ toLocalDate(message.created_at)
+                                                                                    }}
+                                                                                </v-list-item-subtitle>
+                                                                            </v-list-item>
+                                                                        </v-list>
+                                                                    </v-expansion-panel-text>
+                                                                </v-expansion-panel>
+                                                            </v-expansion-panels>
+                                                        </v-card>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </v-col>
-                                        <v-col>
-
-                                            <div class="text-subtitle font-weight-bold">Driver</div>
-                                            <v-menu open-on-hover v-model="driverMenu" :close-on-content-click="false"
-                                                location="end">
-                                                <template v-slot:activator="{ props }">
-                                                    <v-btn color="primary" variant="text" v-bind="props"
-                                                        class="px-0 text-none text-body-1 font-weight-bold">
-                                                        John Doe
-                                                    </v-btn>
-                                                </template>
-                                                <v-card style="max-with: 400px;">
-                                                    <v-card-text>
-                                                        <v-row>
-                                                            <v-col cols="12" md="4">
-                                                                <v-avatar size="100">
-                                                                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg"
-                                                                        alt="John">
-                                                                        <template v-slot:placeholder>
-                                                                            <div
-                                                                                class="d-flex align-center justify-center fill-height">
-                                                                                <v-progress-circular color="grey-lighten-4"
-                                                                                    indeterminate></v-progress-circular>
-                                                                            </div>
-                                                                        </template>
-                                                                    </v-img>
-                                                                </v-avatar>
-                                                            </v-col>
-                                                            <v-col cols="12" md="8">
-                                                                <div class="d-flex flex-column">
-                                                                    <div class="text-subtitle font-weight-bold">Address
-                                                                    </div>
-                                                                    <div class="text-subtitle-1" style="line-height: 1;">
-                                                                        1234 Arlington Lane MI tX</div>
-                                                                </div>
-                                                                <div class="d-flex flex-column mt-3">
-                                                                    <div class="text-subtitle font-weight-bold">Status</div>
-                                                                    <div class="text-body-1 text-success">
-                                                                        Active</div>
-                                                                </div>
-                                                            </v-col>
-                                                        </v-row>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-menu>
-                                            <div class="text-caption">(+123456789)</div>
-
-
-
-                                            <div class="text-subtitle  mt-3 font-weight-bold">Truck</div>
-                                            <v-menu open-on-hover v-model="truckMenu" :close-on-content-click="false"
-                                                location="end">
-                                                <template v-slot:activator="{ props }">
-                                                    <v-btn color="primary" variant="text" v-bind="props"
-                                                        class="px-0 text-none text-body-1 font-weight-bold">
-                                                        123456
-                                                    </v-btn>
-                                                </template>
-                                                <v-card style="width: 500px;">
-                                                    <v-card-text>
-                                                        <v-row>
-                                                            <v-col cols="12" md="4">
-                                                                <v-img max-width="200"
-                                                                    src="https://www.sotrex.com/media/catalog/product/cache/1/thumbnail/225x/17f82f742ffe127f42dca9de82fb58b1/c/n/cn12egj_-_1_1.jpg"
-                                                                    alt="John">
-                                                                    <template v-slot:placeholder>
-                                                                        <div
-                                                                            class="d-flex align-center justify-center fill-height">
-                                                                            <v-progress-circular color="grey-lighten-4"
-                                                                                indeterminate></v-progress-circular>
-                                                                        </div>
-                                                                    </template>
-                                                                </v-img>
-                                                            </v-col>
-                                                            <v-col cols="12" md="8">
-                                                                <div class="d-flex flex-column">
-                                                                    <p>
-                                                                        <span
-                                                                            class="text-subtitle font-weight-bold mr-2">Manufacturer:</span>
-                                                                        <span class="text-subtitle-1"
-                                                                            style="line-height: 1;">Volvo</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        <span
-                                                                            class="text-subtitle font-weight-bold mr-2">Model:</span>
-                                                                        <span class="text-subtitle-1"
-                                                                            style="line-height: 1;">FH500</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        <span
-                                                                            class="text-subtitle font-weight-bold mr-2">Year
-                                                                            of Manufacture: </span>
-                                                                        <span class="text-subtitle-1"
-                                                                            style="line-height: 1;">2013</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        <span
-                                                                            class="text-subtitle font-weight-bold mr-2">Chasis
-                                                                            Number:</span>
-                                                                        <span class="text-subtitle-1"
-                                                                            style="line-height: 1;">YV2AG30C6DB652729</span>
-                                                                    </p>
-                                                                    <p>
-                                                                        <span
-                                                                            class="text-subtitle font-weight-bold mr-2">Model:</span>
-                                                                        <span class="text-subtitle-1"
-                                                                            style="line-height: 1;">FH500</span>
-                                                                    </p>
-                                                                </div>
-                                                            </v-col>
-                                                        </v-row>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-menu>
-
-
-                                            <div class="d-flex flex-column mt-3">
-                                                <div class="text-subtitle font-weight-bold">Trailer</div>
-                                                <div class="text-body-1 text-primary font-weight-bold">123456</div>
                                             </div>
                                         </v-col>
                                     </v-row>
@@ -228,7 +342,7 @@
                                                     @click="editCommodity(item)">
                                                     <v-list-item-title class="text-primary font-weight-bold">{{
                                                         item.commodity != null ? getCommodityName(item.commodity) :
-                                                        'Unknown'
+                                                            'Unknown'
                                                     }}</v-list-item-title>
                                                     <v-list-item-subtitle>{{ item.description }}description goes
                                                         here</v-list-item-subtitle>
@@ -262,7 +376,8 @@
                                             </div>
 
                                             <div class="d-flex mb-2">
-                                                <span class="mr-2"><v-icon class="mr-2">mdi-thermometer-lines</v-icon>Engine
+                                                <span class="mr-2"><v-icon
+                                                        class="mr-2">mdi-thermometer-lines</v-icon>Engine
                                                     Temp
                                                     :</span>
                                                 <span class="font-weight-bold">140 <sup>O</sup>C</span>
@@ -283,8 +398,9 @@
                                     <v-expand-y-transition>
                                         <div class="d-flex flex-column mt-3" v-if="showIncidentInfo">
                                             <div class="d-flex flex-column mb-2">
-                                                <div class="mr-2 text-h6 font-weight-bold"><v-icon class="mr-2" size="12"
-                                                        color="red">mdi-circle-slice-8</v-icon>There is no voltage at the
+                                                <div class="mr-2 text-h6 font-weight-bold"><v-icon class="mr-2"
+                                                        size="12" color="red">mdi-circle-slice-8</v-icon>There is no
+                                                    voltage at the
                                                     PSN
                                                     input
                                                 </div>
@@ -315,10 +431,10 @@
                                                         label="Bill" density="compact"></v-text-field>
                                                 </v-col>
                                                 <v-col cols="12" class="pb-0">
-                                                    <v-select v-model="loadInfo.bill_to_customer_id" variant="outlined" flat
-                                                        label="Bill to"
+                                                    <v-select v-model="loadInfo.bill_to_customer_id" variant="outlined"
+                                                        flat label="Bill to"
                                                         :items='[{ id: 1, value: "client 1" }, { id: 2, value: "client 2" }]'
-                                                        item-value="id" item-titie="name" density="compact"></v-select>
+                                                        item-value="id" item-title="name" density="compact"></v-select>
                                                 </v-col>
                                                 <v-col cols="12" class="pb-0">
                                                     <v-text-field v-model="loadInfo.reference" variant="outlined" flat
@@ -344,7 +460,8 @@
                                             <v-row>
                                                 <v-col cols="12" md="4" class="pb-0">
                                                     <v-text-field v-model="loadInfo.bill_miles" variant="outlined" flat
-                                                        label="Bill miles" type="number" density="compact"></v-text-field>
+                                                        label="Bill miles" type="number"
+                                                        density="compact"></v-text-field>
                                                 </v-col>
                                                 <v-col cols="12" md="4" class="pb-0">
                                                     <v-text-field v-model="loadInfo.received" variant="outlined" flat
@@ -355,12 +472,14 @@
                                                         label="Release" type="date" density="compact"></v-text-field>
                                                 </v-col>
                                                 <v-col cols="12" md="4" class="pb-0">
-                                                    <v-select v-model="loadInfo.team" variant="outlined" flat label="Team"
+                                                    <v-select v-model="loadInfo.team" variant="outlined" flat
+                                                        label="Team"
                                                         :items='[{ id: 1, name: "team1" }, { id: 2, name: "team2" }]'
                                                         item-value="id" item-title="name" density="compact"></v-select>
                                                 </v-col>
                                                 <v-col cols="12" md="4" class="pb-0">
-                                                    <v-select v-model="loadInfo.type" variant="outlined" flat label="Type"
+                                                    <v-select v-model="loadInfo.type" variant="outlined" flat
+                                                        label="Type"
                                                         :items='[{ id: 1, name: "type 1" }, { id: 2, name: "type 2" }]'
                                                         item-value="id" item-title="name" density="compact"></v-select>
                                                 </v-col>
@@ -430,10 +549,11 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-// import { useCommodityStore } from '@/stores/settings/dispatch/commodity'
 import { ref, computed, defineProps, defineEmits, toRefs, watch, onMounted } from 'vue'
-import type { LoadInfo, StopInfo, CommodityInfo } from '@/types/store/load'
-import googleMaps from '@/composables/googleMaps'
+import type { LoadInfo, StopInfo, CommodityInfo } from '~/types/dispatch/load'
+import renderMap from '@/composables/renderMap'
+
+import GoogleMap from '~/composables/googleMaps'
 
 const emit = defineEmits(['update:show'])
 
@@ -452,9 +572,15 @@ const props = defineProps({
     }
 });
 
+const loadStore = useLoadStore()
+const { truckTelematics } = storeToRefs(loadStore)
+
 const commodityStore = useCommodityStore()
 
 const { item, updating, show } = toRefs(props);
+
+const mapInstance = ref<GoogleMap | null>(null)
+const truckMarker = ref<google.maps.Marker | null>(null)
 
 const showDetails = ref(true)
 const showBillingInfo = ref(false)
@@ -466,35 +592,14 @@ const showLogs = ref(false)
 
 const driverMenu = ref(false)
 const truckMenu = ref(false)
+const trailerMenu = ref(false)
 
 const mounted = ref(false)
 
-const defaultLoad = ref<LoadInfo>({
-    // id: null,
-    // status: null,
-    // bill: null,
-    // bill_to_customer_id: null,
-    // // reference: null,
-    // bill_miles: null,
-    // received: null,
-    // release: null,
-    // team: null,
-    // type: null,
-    // trailer: null,
-    // temp: null,
-    // seal_number: null,
-    // pallets: null,
-    // exch: null,
-    // salesman: null,
-    // notes: null,
-    // route_id: null,
-    // route: {
-    //     id: null,
-    //     name: null,
-    //     stops: [] as StopInfo[]
-    // },
-    // commodities: [] as CommodityInfo[],
-})
+const telematicsRequestId = ref<NodeJS.Timeout | null>(null)
+
+
+const defaultLoad = ref<LoadInfo>({} as LoadInfo)
 
 const loadInfo = ref(defaultLoad.value)
 
@@ -577,12 +682,21 @@ const commodityHeaders = ref([
 ])
 
 const title = computed(() => {
-    return props.updating ? 'Load Info (Load #1234, Route #F212)' : 'Book Load'
+    return (props.updating && loadInfo.value) ? `Load Info (Load #${loadInfo.value?.id}, Route #${loadInfo.value?.route_number})` : 'Book Load'
 })
 
 const saveButtonText = computed(() => {
     return props.updating ? 'update' : 'Save'
 })
+
+const getEdiMessages = (load: LoadInfo, stop: StopInfo) => {
+    return load?.edi_communication?.filter((item: any) => item.stopSequenceNumber == stop?.sequence && !['990', '997'].includes(item.MessageType)) || []
+}
+
+const toLocalDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString();
+}
 
 const dispatchLoad = () => {
     console.log('dispatching load')
@@ -624,7 +738,64 @@ onMounted(() => {
     mounted.value = true
 })
 
-watch(dialog, (val) => {
+
+
+// this function is triggered in a watcher
+const updateTruckPosition = () => {
+    let truckData = truckTelematics.value?.diagnostics?.gps
+
+    if (mapInstance.value && truckData) {
+        if (truckMarker.value) {
+            truckMarker.value.setMap(null)
+        }
+
+        const truckMarkerSVG = `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 506.999 511.89">
+                                    <path fill="#5d5cde" d="M505.023 485.928L263.083 6.415c-4.051-8.553-15.091-8.553-19.144 0L2.005 485.931c-7.858 15.66 8.874 31.685 24.438 23.909l227.066-120.826L480.576 509.84c15.687 7.867 32.2-8.374 24.447-23.912z"/>
+                                </svg>`
+        const TruckIcon  = {
+            url: mapInstance.value.SvgToBase64Image(truckMarkerSVG),
+            scaledSize: new google.maps.Size(30, 20)
+        }
+
+        truckMarker.value = new google.maps.Marker({
+            position: { lat: truckData.latitude, lng: truckData.longitude },
+            map: mapInstance.value?.map,
+            icon: TruckIcon,
+        });
+
+        mapInstance.value.panTo({ lng: truckData.longitude, lat: truckData.latitude })
+    
+         // Add a tooltip to the truck marker
+        const infowindow = new google.maps.InfoWindow({
+            content: `Truck is heading`,
+        });
+        (truckMarker.value as google.maps.Marker).addListener('mouseover', () => infowindow.open(mapInstance.value?.map, truckMarker.value));
+        (truckMarker.value as google.maps.Marker).addListener('mouseout', () => infowindow.close());
+    }
+}
+
+const setTelematicsRequest = () => {
+    // Start immediately and then run every 5 minutes
+    telematicsRequestId.value = setTimeout(async () => {
+        await loadStore.fetchTruckTelematics(loadInfo.value.current_truck_id as any)
+        // await loadStore.fetchTruckTelematics(1194)
+
+        // Start the repeating interval after the initial execution
+        telematicsRequestId.value = setInterval(async () => {
+            await loadStore.fetchTruckTelematics(loadInfo.value.current_truck_id as any)
+            // await loadStore.fetchTruckTelematics(1194)
+        }, 5 * 60 * 1000); //5 minutes = 5 * 60 seconds * 1000 milliseconds
+    }, 0); // The delay is set to 0 to execute immediately
+}
+
+const clearTelematicsRequest = () => {
+    if (telematicsRequestId.value) {
+        clearInterval(telematicsRequestId.value);
+        telematicsRequestId.value = null;
+    }
+}
+
+watch(dialog, async (val) => {
     if (val) {
         showDetails.value = true
         if (props.updating) {
@@ -632,19 +803,35 @@ watch(dialog, (val) => {
         }
 
         if (mounted.value) {
-            let mapInstance = googleMaps()
-            mapInstance.renderMap({
-                customButtons: [{ id: 'etaDisplay', position: 'RIGHT_TOP' }, { id: 'detailsDisplay', position: 'LEFT_TOP' }],
-                mapContainerID: 'map',
-                zoomControlsContainerID: 'zoomControls',
-                index: '',
+            nextTick(async () => {
+                var mapLoader: HTMLElement | null = document.getElementById('loader');
+                mapInstance.value = await renderMap(loadInfo.value, 'map', '')
+
+                //get truck location updates
+                setTelematicsRequest()
+
+                //hide map loader once map is rendered
+                if (mapLoader) {
+                    mapLoader.style.display = "none"
+                }
+
             })
         }
 
     } else {
         loadInfo.value = defaultLoad.value
+
+        clearTelematicsRequest()
     }
 })
+
+watch(truckTelematics, (val) => {
+    // if (val && val && val.id == loadInfo.value.current_truck_id) {
+    //     updateTruckPosition()
+    // }
+    updateTruckPosition()
+})
+
 </script>
 
 <style scoped>
@@ -670,3 +857,4 @@ watch(dialog, (val) => {
     height: 100%;
 }
 </style>
+~/composables/googleMapsV0

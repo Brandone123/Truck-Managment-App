@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useCommodityStore } from '@/stores/settings/dispatch/commodity'
-import type { CommodityInfo } from '@/types/store/load'
+import type { CommodityInfo } from '~/types/dispatch/load'
 import { ref, computed, defineProps, defineEmits, toRefs, watch } from 'vue'
 
 const emit = defineEmits(['update:show'])

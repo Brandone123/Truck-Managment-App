@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ref, computed, defineProps, defineEmits, toRefs, watch } from 'vue'
-import type { StopInfo } from '@/types/store/load'
+import type { StopInfo } from '~/types/dispatch/load'
 
 // const emit = defineEmits([''])
 
