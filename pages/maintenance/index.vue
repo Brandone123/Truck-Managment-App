@@ -6,7 +6,7 @@
   
 <script type="ts">
 import { ref, createApp, h, getCurrentInstance } from 'vue';
-import Loads from '@/components/dispatch/Loads.vue'
+//import Loads from '@/components/dispatch/Loads.vue'
 
 export default {
     setup() {
