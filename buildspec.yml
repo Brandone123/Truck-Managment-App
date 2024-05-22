@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - npm install
+  pre_build:
+    commands:
+      - npm run lint
+  build:
+    commands:
+      - npx nuxi generate
+post_build:
+    commands:
+      - aws s3 sync dist/ s3://moonstar-tms --delete
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'dist/'
+
+cache:
+  paths:
+    - 'node_modules/**/*'
