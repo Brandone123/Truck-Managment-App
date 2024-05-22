@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
+ 
 import { dispatchNavbarMenu } from '@/data/layout/dispatchNavBarData';
 import { maintenanceNavbarMenu } from '@/data/layout/maintenanceNavBarData';
 import { yardCheckNavbarMenu } from '@/data/layout/yardCheckNavBarData';
 import { safetyAndComplianceNavbarMenu } from '@/data/layout/safetyAndComplianceNavBarData';
 import { useAttendanceNavbarMenu } from '@/composables/layout/attendanceNavBarData';
+import { recruitingNavbarMenu } from '@/composables/layout/recruitingNavBarData';
+import {useEmployeeInformationAndOperationNavbarMenu} from  '@/composables/layout/employeeInformationAndOperationNavBarData';
 import { globalSettingsNavbarMenu } from '@/data/layout/settingsNavBarData';
 
 import { IconSettings } from '@tabler/icons-vue';
@@ -31,8 +33,12 @@ const entryPage = (module : any) => {
             return safetyAndComplianceNavbarMenu[0].to
         case 'attendance':
             return useAttendanceNavbarMenu()[0].to
+        case 'recruiting':
+            return recruitingNavbarMenu[0].to
         case 'yard check':
             return yardCheckNavbarMenu[0]?.to 
+        case 'employee information and operation':
+            return useEmployeeInformationAndOperationNavbarMenu()[0]?.to 
         default:
             return module.link
     }
