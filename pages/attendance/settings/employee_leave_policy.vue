@@ -25,14 +25,14 @@ const employeeLeavePolicyHeaders = ref([
     { title: 'Name', value: 'full_name' },
     { title: 'Email', value: 'email' },
     { title: 'Department', value: 'department.name' },
-    { title: 'Policy', value: 'policy.name' },
+    { title: 'Policy', value: 'leave_policy.name' },
     { title: 'Actions', value: 'actions' },
 ])
 
 
 const fixedEmployeeList = computed(() =>{
     return employeeList.value.map((employee: EmployeeInfo) =>{
-        let policy = employeeList.value.find((item: EmployeeInfo) => item.id == employee.policy_id)
+        let policy = employeeList.value.find((item: EmployeeInfo) => item.id == employee.leave_policy_id)
         return {
             ...employee,
             policy

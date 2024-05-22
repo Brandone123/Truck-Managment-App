@@ -16,7 +16,7 @@ definePageMeta({
             </v-col>
             <v-col lg="5" xl="4" cols="12" class="d-flex align-center justify-center authentication bg-surface">
                 <div class="mt-xl-0 mt-5 mw-100 bg-surface">
-                    <h2 class="text-h6 font-weight-semibold mb-2 text-center">Moonstar Express TMS</h2>
+                    <h2 class="text-h6 font-weight-semibold mb-2 text-center">Moon Star Express TMS</h2>
                     <v-row class="d-flex mb-3">
                         <v-col sm="6" cols="12" class="pr-2">
                             <v-btn block variat="outlined" class="border text-subtitle-1">

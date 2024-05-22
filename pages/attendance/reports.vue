@@ -33,6 +33,7 @@ const employees = computed(() =>{
                 <v-icon>mdi-upload</v-icon>
                 Bulk Upload
             </v-btn> -->
+            <AttendanceReportsGenerateReport />
             <AttendanceReportsAddTimeoffRequest :show="attendanceRecordDialog" @update:show="updateAttendanceRecord"
                 :updating="updatingAttendanceRecord" :item="editedAttendanceRecord" :employeeList="employees"/>
         </div>

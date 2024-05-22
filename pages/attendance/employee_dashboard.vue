@@ -1,146 +1,109 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import type { EmployeeInfo } from '@/types/store/employee'
-import { Doughnut } from 'vue-chartjs';
-import LineDiagram from '@/components/attendance/LineDiagram.vue';
-import AttendanceStat from '@/components/attendance/AttendanceStat.vue';
-import EmployeeBar from '@/components/attendance/EmployeeAttendanceStat.vue';
-import LeaveTypeDistrStat from '@/components/attendance/LeaveTypeDistrStat.vue';
+import EmployeeLeaveTypeDistrStat from '@/components/attendance/EmployeeLeaveTypeStat.vue';
 // @ts-ignore
 import VueSpeedometer from "vue-speedometer"
 
-const headers = ref([
-  { title: "Employee ID", key: "id", sortable: true },
-  { title: "Employee Name", key: "name", sortable: true },
-  { title: "Date", key: "date", sortable: true },
-  { title: "Department", key: "department", sortable: false },
-  { title: "Working Location", key: "location", sortable: false },
-  { title: "Status", key: "status", sortable: false, align: 'center' },
-  { title: "Worked Hours", key: "worked_h", sortable: false },
-  { title: "Scheduled Hours", key: "schedule_h", sortable: false },
-  { title: "Idle Time", key: "idle_time", sortable: false },
-])
+const currentDate = ref(new Date());
 
-const employeeStatuses = ref([
-  {
-    id: 1,
-    name: 'John Doe',
-    status: 'On Leave',
-    department: 'Marketting',
-    date: '02/02/2024',
-    location: 'Working from office',
-    worked_h: '2h 19min',
-    schedule_h: '5h',
-    idle_time: '7min(s)'
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    status: 'Active',
-    department: 'Marketting',
-    date: '17/11/2024',
-    location: 'Working from office',
-    worked_h: '28h 09min',
-    schedule_h: '9h',
-    idle_time: '6min(s)'
-  },
-  {
-    id: 3,
-    name: 'Wasim Jaffer',
-    status: 'On Leave',
-    department: 'Transport',
-    location: 'Working from home',
-    date: '23/03/2024',
-    worked_h: '64h 11min',
-    schedule_h: '7h',
-    idle_time: '6min(s)'
-  },
-  {
-    id: 4,
-    name: 'Pan Hibsen',
-    status: 'Active',
-    department: 'Logistique',
-    location: 'Working from home',
-    date: '19/05/2024',
-    worked_h: '12h 03min',
-    schedule_h: '3h',
-    idle_time: '11min(s)'
-  },
-  {
-    id: 5,
-    name: 'Yoshi Nagase',
-    status: 'On Leave',
-    department: 'Driver',
-    location: 'Working from home',
-    date: '3/12/2024',
-    worked_h: '23h',
-    schedule_h: '5h',
-    idle_time: '6min(s)'
-  },
-])
+interface DayOfWeek {
+    day: number;
+    dayOfWeek: string;
+    isToday: boolean;
+}
 
 const worked_hours = ref(""); // Remplacez par la valeur initiale de votre compteur
 
 worked_hours.value = "35";
 
 const employeeListStore = useEmployeeStore()
-const { employeeList } = storeToRefs(employeeListStore)
+const { employeeList, loading: EmployeeLoading } = storeToRefs(employeeListStore)
+
+const timeoffRequestStore = useTimeoffRequestStore();
+const { timeoffRequestList, loading: TimeOffLoading } = storeToRefs(timeoffRequestStore);
+
+const employeeTimeoffRequestStore = useEmployeeTimeoffRequestStore();
+const {employeeTimeoffRequestList, loading: EmployeeTimeOffLoading} = storeToRefs(employeeTimeoffRequestStore)
+
+const userTypeStore = useAuthStore();
+const {user} = storeToRefs(userTypeStore)
 
 onMounted(() => {
   employeeListStore.fetchEmployeeList();
+  timeoffRequestStore.loadTimeoffRequests();
 });
 
-const formattedEmployeeList = computed(() => {
-  return employeeList.value.map((item: EmployeeInfo) => {
-    return { ...item, full_name: `${item.first_name} ${item.last_name}` }
-  })
+const loading = computed(()=>{
+    return EmployeeLoading.value || TimeOffLoading.value || EmployeeTimeOffLoading.value
+})
+
+const employeeTimeOffPending = employeeTimeoffRequestList.value.filter((item) => item.status === "pending" && item.employee_id === user.value?.id).length;
+const employeeTimeOffRejected = employeeTimeoffRequestList.value.filter((item) => item.status === "rejected" && item.employee_id === user.value?.id).length;
+const employeeTimeOffRequest = employeeTimeoffRequestList.value.filter((item) => item.employee_id === user.value?.id).length;
+
+function getDaysInMonth(year: number, month: number): DayOfWeek[] {
+    const daysInMonth: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today: Date = new Date();
+    const firstDayOfMonth: Date = new Date(year, month, 1);
+    const startingDayOfWeek: number = firstDayOfMonth.getDay();
+    const numberOfDays: number = new Date(year, month + 1, 0).getDate();
+    const days: { day: number; dayOfWeek: string; isToday: boolean }[] = [];
+
+    for (let day = 1; day <= numberOfDays; day++) {
+        const date: Date = new Date(year, month, day);
+        const dayOfWeek: string = daysInMonth[(startingDayOfWeek + (day - 1)) % 7];
+        const isToday: boolean = date.toDateString() === today.toDateString();
+        days.push({ day, dayOfWeek, isToday });
+    }
+    return days;
+}
+
+// sort date ranges in ascending order
+function sortNonOverlappingDateRanges(dateRanges: Array<any>) {
+    dateRanges.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime() || new Date(a.end_date).getTime() - new Date(b.end_date).getTime());
+    return dateRanges;
+}
+
+const numberOfAbsences = computed(() => {
+  let daysOfMonth = getDaysInMonth(currentDate.value.getFullYear(),currentDate.value.getMonth()).map((item) => item.day);
+  let employee_days_off_in_month = sortNonOverlappingDateRanges(timeoffRequestList.value.filter((employee) => {
+      return employeeList.value.some((item) => item.id  === employee.employee_id) 
+    })) || [];
+
+    const loggedInEmployee = employeeList.value.find((employee) => {
+      return employee.id ===  user.value?.id;
+    });
+
+    if (!loggedInEmployee) {
+      return 0;
+    }
+
+    const employeeDaysOff = employee_days_off_in_month.filter((item) => item.employee_id === loggedInEmployee.id);
+
+    console.log(employeeDaysOff)
+
+    const daysOff = employeeDaysOff.reduce((totalDaysOff, item) => {
+      const startDate = new Date(item.start_date).getTime();
+      const endDate = new Date(item.end_date).getTime();
+      const durationInDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      return totalDaysOff + durationInDays;
+    }, 0);
+
+  const availableDays = daysOfMonth.length - daysOff;
+
+  const absenceDays = daysOfMonth.length - availableDays;
+
+  console.log(daysOff);
+  console.log(absenceDays);
+
+  return absenceDays;
 });
 
-const dateOptions = ['Last 1 month', 'Last 3 months', 'Last 6 months', 'Custom']
-
-const customColors = ["#FF6384", "#36A2EB"];
-const chartOptions = computed(() => {
-  return {
-    labels: ["Home", "Office"],
-    chart: {
-      type: "donut",
-      fontFamily: `inherit`,
-      foreColor: "#a1aab2",
-      toolbar: {
-        show: false,
-      },
-    },
-    colors: customColors,
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        donut: {
-          size: "50%",
-          background: "transparent",
-        },
-      },
-    },
-    stroke: {
-      show: false,
-    },
-
-    dataLabels: {
-      enabled: false,
-    },
-    legend: {
-      show: true,
-      position: "top",
-    },
-    tooltip: { theme: "light", fillSeriesColor: true },
-  };
-});
-const Chart = [60, 40];
 </script>
 
 <template>
   <v-row>
-    <v-col cols="12" md="3">
+    <v-col cols="12" md="6" lg="3" class="col">
       <v-card class="px-5 py-8">
           <div class="d-flex align-center">
               <v-card color="blue-lighten-5" class="mr-3" elevation="0">
@@ -148,25 +111,31 @@ const Chart = [60, 40];
               </v-card>
               <span>
                 <h4>Total Request</h4>
-                <span>3</span>
+                <span v-if="loading && !employeeTimeoffRequestList">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </span>
+                <span>{{ employeeTimeOffRequest }}</span>
               </span>
           </div>
       </v-card>
     </v-col>
-    <v-col cols="12" md="3">
+    <v-col cols="12" md="6" lg="3" class="col">
       <v-card class="px-5 py-8">
           <div class="d-flex align-center">
               <v-card color="red-lighten-5" class="mr-3" elevation="0">
                   <v-icon size="50" color="red-darken-2">mdi-umbrella-beach</v-icon>
               </v-card>
               <span>
-                <h4>Request Status of TimeOff</h4>
-                <span>Pending</span>
+                <h4>Rejected TimeOff</h4>
+                <span v-if="loading && !employeeTimeoffRequestList">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </span>
+                <span>{{ employeeTimeOffRejected }}</span>
               </span>
           </div>
       </v-card>
     </v-col>
-    <v-col cols="12" md="3">
+    <v-col cols="12" md="6" lg="3" class="col">
       <v-card class="px-5 py-8">
           <div class="d-flex align-center">
               <v-card color="blue-lighten-5" class="mr-3" elevation="0">
@@ -174,78 +143,82 @@ const Chart = [60, 40];
               </v-card>
               <span>
                 <h4>Total Absences</h4>
-                <span>10</span>
+                <span v-if="loading && !employeeTimeoffRequestList">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </span>
+                <span>{{ numberOfAbsences }}</span>
               </span>
           </div>
       </v-card>
     </v-col>
-    <v-col cols="12" md="3">
+    <v-col cols="12" md="6" lg="3" class="col">
       <v-card class="px-5 py-8">
           <div class="d-flex align-center">
               <v-card color="green-lighten-5" class="mr-3">
                   <v-icon size="50" color="green">mdi-calendar</v-icon>
               </v-card>
               <span>
-                <h4>Pre-appouved Absences</h4>
-                <span>2</span>
+                <h4>Pre-Approved Absences</h4>
+                <span v-if="loading && !employeeTimeoffRequestList">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </span>
+                <span>{{employeeTimeOffPending}}</span>
               </span>
           </div>
       </v-card>
     </v-col>
-   
     
-    <v-col cols="12" md="5">
-        <v-card class="px-5 py-5">
-          <div class="d-flex align-center">
-            <span>
-              <h4 >Avg. Hours Worked Per Week</h4>
-              <div class="d-flex align-center justify-center">
-                <vue-speedometer 
-                    :width="500"
-                    :needleHeightRatio="0.7"
-                    :value="`${worked_hours}`"
-                    :customSegmentLabels='[
-                        {
-                        text: "Very Bad",
-                        position: "INSIDE",
-                        color: "#555",
-                        },
-                        {
-                        text: "Bad",
-                        position: "INSIDE",
-                        color: "#555",
-                        },
-                        {
-                        text: "Ok",
-                        position: "INSIDE",
-                        color: "#555",
-                        fontSize: "19px",
-                        },
-                        {
-                        text: "Good",
-                        position: "INSIDE",
-                        color: "#555",
-                        },
-                        {
-                        text: "Very Good",
-                        position: "INSIDE",
-                        color: "#555",
-                        },
-                    ]'
-                    :ringWidth="47"
-                    :needleTransitionDuration="4000"
-                    :minValue="0"
-                    :maxValue="50"
-                    needleTransition="easeElastic"
-                    needleColor="#a7ff83"
-                    textColor="#d8dee9"
-                    />
-              </div>
-            </span>
-          </div>
-        </v-card>
+    <v-col cols="12" md="6" lg="3" class="col">
+      <v-card class="px-5 py-5">
+        <div class="d-flex align-center">
+          <span>
+            <h4>Avg. Hours Worked Per Week</h4>
+            <div>
+              <vue-speedometer
+                class="speedometer"
+                :value="`${worked_hours}`"
+                :customSegmentLabels="[
+                  {
+                    text: 'Very Bad',
+                    position: 'INSIDE',
+                    color: '#555',
+                  },
+                  {
+                    text: 'Bad',
+                    position: 'INSIDE',
+                    color: '#555',
+                  },
+                  {
+                    text: 'Ok',
+                    position: 'INSIDE',
+                    color: '#555',
+                    fontSize: '19px',
+                  },
+                  {
+                    text: 'Good',
+                    position: 'INSIDE',
+                    color: '#555',
+                  },
+                  {
+                    text: 'Very Good',
+                    position: 'INSIDE',
+                    color: '#555',
+                  },
+                ]"
+                :ringWidth="36"
+                :needleTransitionDuration="4000"
+                :minValue="0"
+                :maxValue="50"
+                needleTransition="easeElastic"
+                needleColor="#a7ff83"
+                textColor="#d8dee9"
+              />
+            </div>
+          </span>
+        </div>
+      </v-card>
     </v-col>
-    <v-col cols="12" md="7">
+    <!-- <v-col cols="12" md="6" lg="6" class="col">
       <v-card height="372" class="px-5 py-3">
         <div class="d-flex align-center">
           <span>
@@ -254,12 +227,35 @@ const Chart = [60, 40];
           </span>
         </div>
       </v-card>
-    </v-col>
-    <!-- <v-col cols="12" md="6">
-        <EmployeeBar />
     </v-col> -->
-    <v-col cols="12" md="6">
-       <LeaveTypeDistrStat />
+    <v-col cols="12" md="6" lg="6">
+       <EmployeeLeaveTypeDistrStat />
     </v-col>
   </v-row>
 </template>
+
+<style>
+.speedometer {
+  width: 100%;
+}
+
+@media (min-width: 600px) {
+  .speedometer {
+    width: 300px;
+    margin-left: -15px;
+  }
+}
+
+@media (min-width: 960px) {
+  .speedometer {
+    width: 500px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .speedometer {
+    width: 600px;
+    margin-left: -15px;
+  }
+}
+</style>

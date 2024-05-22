@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { LoadInfo } from '@/types/store/load'
+import type { LoadInfo } from '~/types/dispatch/load'
 
 const loadTemplateStore = useLoadTemplateStore()
 
