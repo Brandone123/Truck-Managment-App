@@ -1,5 +1,5 @@
 
-import { IconKey,IconTruckDelivery,IconShieldCheckeredFilled,IconCarGarage,IconRotateRectangle,IconTruck, IconBuilding, IconUser} from '@tabler/icons-vue';
+import { IconKey,IconTruckDelivery,IconShieldCheckeredFilled,IconCarGarage,IconRotateRectangle,IconSettings,IconTruck, IconBuilding, IconUser, IconUserCog} from '@tabler/icons-vue';
 import type { navMenu } from '~/types/layout/NavMenuTypes';
 import { dispatchSettingsMenu } from '~/data/layout/dispatchNavBarData';
 import { maintenanceSettingsMenu } from '~/data/layout/maintenanceNavBarData';
@@ -27,30 +27,48 @@ const globalSettingsNavbarMenu: navMenu[] = [
         icon: IconShieldCheckeredFilled,
         children: safetyAndComplianceSettingsMenu.map(item => { return {...item,to:`/setup/safety_and_compliance/${item.to}`}})
     },
-    {
-        title: 'Trucks',
-        icon: IconTruck,
-        to: '/setup/trucks'
-    },
-    {
-        title: 'Drivers',
-        icon: IconTruck,
-        to: '/setup/drivers'
-    },
-    {
-        title: 'Employees',
-        icon: IconUser,
-        to: '/setup/employees'
-    },
+    // {
+    //     title: 'Trucks',
+    //     icon: IconTruck,
+    //     to: '/setup/trucks'
+    // },
+
     {
         title: 'Departments',
         icon: IconBuilding,
         to: '/setup/departments'
     },
     {
-        title: 'Roles',
-        icon: IconKey,
-        to: '/setup/roles'
-    }
+        title: 'Account Management',
+        icon: IconCarGarage,
+        children: [
+            {
+                title: 'Employe Profiles',
+                icon: IconUser,
+                to: '/setup/employees'
+            },
+            {
+                title: 'Driver Profiles',
+                icon: IconTruck,
+                to: '/setup/drivers'
+            },
+            {
+                title: 'Carriers',
+                icon: IconSettings,
+                to: '/setup/dispatch/carriers'
+            },
+            {
+                title: 'Roles',
+                icon: IconKey,
+                to: '/setup/roles'
+            },
+            // {
+            //     title: 'Login Credentials',
+            //     icon: IconUserCog,
+            //     to: '/setup/roles'
+            // }
+        ]
+    },
+
 ];
 export { globalSettingsNavbarMenu }

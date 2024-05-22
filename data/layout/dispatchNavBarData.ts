@@ -1,5 +1,5 @@
 
-import {IconTemplate,IconMailFast,IconTruckLoading, IconLayoutDashboard, IconMapPins, IconRulerMeasure, IconPackage, IconTruck, IconRoute, IconFlagCog, IconSettings, IconMessage2Cog, IconUserOff } from '@tabler/icons-vue';
+import { IconTemplate, IconMailFast, IconTruckLoading, IconLayoutDashboard, IconMapPins, IconRulerMeasure, IconPackage, IconTruck, IconRoute, IconFlagCog, IconSettings, IconMessage2Cog, IconUserOff, IconChecklist } from '@tabler/icons-vue';
 import type { navMenu } from '~/types/layout/NavMenuTypes';
 
 const dispatchNavbarMenu: navMenu[] = [
@@ -9,18 +9,54 @@ const dispatchNavbarMenu: navMenu[] = [
         to: '/dispatch'
     },
     {
-        title: 'Load Boards',
-        icon: IconTruckLoading,
-        to: '/dispatch/load_boards'
+        title: 'Load Board',
+        icon: IconChecklist,
+        to: '/dispatch/load_board'
     },
     {
-        title: 'EDI',
-        icon: IconMailFast,
-        to: '/dispatch/edi'
+        title: 'Load Assignments',
+        icon: IconTruckLoading,
+        to: '/dispatch/load_assignments'
+    },
+    {
+        title: 'Locations',
+        icon: IconMapPins,
+        to: '/dispatch/locations'
+    },
+    {
+        title: 'Report',
+        icon: IconChecklist,
+        to: '/dispatch/reports'
+    },
+    
+    {
+        title: 'Readiness',
+        icon: IconChecklist,
+        to: '/dispatch/lane_readiness'
+    },
+    {
+        title: 'Readiness Dashboard',
+        icon: IconChecklist,
+        to: '/dispatch/lane_dashboard'
     },
 ];
 
 const dispatchSettingsMenu: navMenu[] = [
+    {
+        title: 'Locations',
+        icon: IconMapPins,
+        to: 'locations'
+    },
+    {
+        title: 'Trucks',
+        icon: IconTruck,
+        to: 'trucks'
+    },
+    {
+        title: 'Trailers',
+        icon: IconSettings,
+        to: 'trailers'
+    },
     {
         title: 'Templates',
         icon: IconTemplate,
@@ -45,16 +81,6 @@ const dispatchSettingsMenu: navMenu[] = [
         title: 'Loads',
         icon: IconPackage,
         to: 'loads'
-    },
-    {
-        title: 'Trucks',
-        icon: IconTruck,
-        to: 'trucks'
-    },
-    {
-        title: 'Trailers',
-        icon: IconSettings,
-        to: 'trailers'
     },
     {
         title: 'Carriers',

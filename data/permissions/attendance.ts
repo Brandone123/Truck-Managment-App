@@ -1,11 +1,12 @@
-const crudOperations = {
+import type { AttendancePermissionInfo, PermissionCRUDInfo } from "@/types/store/role"
+
+const crudOperations: PermissionCRUDInfo = {
   create: { name: 'Create', value: false },
   update: { name: 'Update', value: false },
   delete: { name: 'Delete', value: false }
 }
 
-
-export const attendancePermissions = {
+export const attendancePermissions: AttendancePermissionInfo = {
   adminDashboard: { name: 'Admin Dashboard', value: false },
   employeeDashboard: { name: 'Employee Dashboard', value: false },
   reports: { name: 'Reports', value: false },
