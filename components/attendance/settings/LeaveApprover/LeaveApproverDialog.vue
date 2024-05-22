@@ -37,6 +37,7 @@
 import { storeToRefs } from 'pinia'
 import { ref, computed, toRefs, watch } from 'vue'
 import type { LeaveApproverInfo } from '@/types/attendance/leave_approver'
+import type {EmployeeInfo} from '@/types/store/employee'
 
 const emit = defineEmits(['update:show', 'addLeaveApprover', 'editLeaveApprover'])
 

@@ -131,6 +131,7 @@ const getEmployeeDepartment = (employee_id : number) => {
         <template v-slot:item.actions="{ item }">
             <v-btn density="compact" flat icon="mdi-pencil" @click="editTimeoffRequest(item)"></v-btn>
             <v-btn density="compact" flat icon="mdi-delete"></v-btn>
+           
         </template>
     </SharedUiCustomTable>
 </template>

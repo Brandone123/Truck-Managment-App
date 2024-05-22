@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { TimeoffRequest } from '~/types/attendance/timeoff_request';
+import type { LeaveApproverInfo } from '~/types/attendance/leave_approver';
+import type { LeavePolicyInfo } from '~/types/attendance/leave_policy';
+
 import { useDisplay } from 'vuetify'
 const { mobile } = useDisplay()
 
@@ -21,11 +24,24 @@ const { leaveTypeList, loading: loadingTimeoffOptionList } = storeToRefs(leaveTy
 const employeeTimeoffRequestStore = useEmployeeTimeoffRequestStore()
 const { employeeTimeoffRequestList, loading: loadingEmployeeTimeoffRequestList } = storeToRefs(employeeTimeoffRequestStore)
 
+const leaveApproverStore = useLeaveApproverStore()
+const { leaveApproverList } = storeToRefs(leaveApproverStore)
+
+const leavePolicyStore = useLeavePolicyStore()
+const { leavePolicyList } = storeToRefs(leavePolicyStore)
+
 /********************
  *MOUNTED HOOKS
 ********************/
 
 onMounted(() => {
+    if(auth.user?.employee?.id){
+        leavePolicyStore.getEmployeeLeaveStatus(auth.user.employee.id)
+    }
+
+    leavePolicyStore.fetchLeavePolicyList()
+    leaveApproverStore.fetchLeaveApproverList()
+
     leaveTypeStore.fetchLeaveTypeList()
     employeeTimeoffRequestStore.fetchEmployeeTimeoffRequests()
 })
@@ -58,6 +74,12 @@ const editedAttendanceRecord = ref({});
 const attendanceRecordDialog = ref(false)
 
 const updatingAttendanceRecord = ref(false)
+
+//Incomplete Employee Profile 
+const showIncompleteTimeoffProfile = ref<boolean>(false)
+const incompleteProfileMessageList = ref<string[]>([]);
+
+const selectedDate = ref<string | null>(null)
 
 /********************
  *COMPUTED PROPERTIES
@@ -422,9 +444,75 @@ function editTimeoff(event: TimeoffRequest) {
 }
 
 function updateCurrentYear(event: number) {
-    console.log(event)
     currentYear.value = event
 }
+
+function addAttendance(monthDay: number, monthNumber: number) {
+    let employee = auth.user?.employee
+    if (employee) {
+        //validate employeeInfo
+        const errorList = employeeProfileErrors()
+        if (errorList.length) {
+            incompleteProfileMessageList.value = errorList
+            showIncompleteTimeoffProfile.value = true
+            useLayoutStore().setStatusMessage('Incomplete Employee Profile', 'error')
+            return
+        }
+
+        let date = new Date(currentYear.value, monthNumber, monthDay,0,0,0)
+        var today = new Date();
+        today = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+
+        if (date.getTime() < today.getTime()) {
+            useLayoutStore().setStatusMessage('Select a date greater than or equal to today', 'error')
+            return
+        }
+
+        //validate leave policy delay period
+        let waitPeriodEnd = today;
+        let min_notice_period = getLeavePolicy(employee.leave_policy_id as number)?.min_notice_period || 0
+
+        let delay_period = min_notice_period
+        if (delay_period > 0) {
+            delay_period -= 1
+        }
+
+        waitPeriodEnd.setDate(waitPeriodEnd.getDate() +  delay_period)
+
+        // check if current date meets the minimum wait time
+        if (date.getTime() <= waitPeriodEnd.getTime()) {
+            let requestValidFrom = new Date()
+            if(delay_period  > 0){
+                requestValidFrom.setDate(requestValidFrom.getDate() + min_notice_period)
+            }
+
+            useLayoutStore().setStatusMessage(`Requests Available from ${requestValidFrom.toISOString().substring(0, 10)}`, 'error')
+            return
+        }
+
+        selectedDate.value = date.toISOString().substring(0, 10)
+        attendanceRecordDialog.value = true
+    }
+}
+
+function employeeProfileErrors() {
+    let response = []
+
+    const employee = auth.user?.employee
+    if (employee && !leaveApproverList.value.some((item: LeaveApproverInfo) => item.id == employee.approver_id)) {
+        response.push('No Valid Leave Approver Assigned for this employee')
+    }
+    if (employee && !leavePolicyList.value.some((item: LeavePolicyInfo) => item.id == employee.leave_policy_id)) {
+        response.push('No Valid Leave Policy Assigned for this employee')
+    }
+
+    return response
+}
+
+function getLeavePolicy(leave_policy_id: number) {
+    return leavePolicyList.value.find((item: LeavePolicyInfo) => item.id == leave_policy_id)
+}
+
 </script>
 
 <template>
@@ -445,10 +533,10 @@ function updateCurrentYear(event: number) {
             <v-col cols="12" md="6">
                 <v-row>
                     <v-spacer></v-spacer>
-                    <AttendanceEmployeeAddTimeoffRequest :show="attendanceRecordDialog" @update:addInfo="addTimeoff"
+                    <AttendanceEmployeeAddTimeoffRequest :employeeProfileErrors="employeeProfileErrors" :show="attendanceRecordDialog" @update:addInfo="addTimeoff"
                         @update:editInfo="editTimeoff" @update:show="updateTimeoffRequestRecord"
                         :updating="updatingAttendanceRecord" :item="(editedAttendanceRecord as any)"
-                        :employee="auth?.user?.employee" />
+                        :employee="auth?.user?.employee" :selectedDate="(selectedDate as any)" />
                 </v-row>
             </v-col>
         </v-row>
@@ -485,12 +573,12 @@ function updateCurrentYear(event: number) {
                         <v-data-table :loading="loading" class="timeoff timeoff-display" :items="item.calendar"
                             :headers="item.headers">
                             <template v-slot:body="{ items }">
-                                <tr v-for="(item, j) in  items" :key="'row-' + j">
-                                    <td v-for="(dayGroup, j) in item" :key="'row-' + j"
+                                <tr v-for="(item, k) in  items" :key="'row-' + k">
+                                    <td v-for="(dayGroup, l) in item" :key="'row-' + l"
                                         :colspan="(typeof dayGroup === 'number' || dayGroup === null) ? 1 : (dayGroup as TimeoffGroup).values.length"
                                         class="px-0 text-center">
                                         <v-card elevation="0" v-if="(typeof dayGroup == 'number' || dayGroup == null)"
-                                            @click="attendanceRecordDialog = true">
+                                            @click="dayGroup != null ? addAttendance(dayGroup, j) : ''">
                                             <div class="d-flex justify-space-between text-center">
                                                 <span class="pa-2 flex-grow-1">{{ dayGroup }}</span>
                                             </div>
@@ -499,21 +587,22 @@ function updateCurrentYear(event: number) {
                                         <v-card v-else @click="showEditTimeoff((dayGroup as TimeoffGroup).id)"
                                             :color="getColor(dayGroup)" class="px-0">
                                             <div class="d-flex justify-space-between text-center">
-                                                <span v-for="(dayOff, j) in (dayGroup as TimeoffGroup).values"
-                                                    :key="'dayOff' + j" class="pa-2 flex-grow-1">{{
-                                                        dayOff
-                                                    }}</span>
+                                                <span v-for="(dayOff, m) in (dayGroup as TimeoffGroup).values"
+                                                    :key="'dayOff' + m" class="pa-2 flex-grow-1">{{
+                        dayOff
+                    }}</span>
                                             </div>
                                             <v-tooltip activator="parent" location="bottom">{{
-                                                getTimeofOption((dayGroup as
-                                                    TimeoffGroup).attendance_leave_type_id)?.name
-                                            }}</v-tooltip>
+                        getTimeofOption((dayGroup as
+                            TimeoffGroup).attendance_leave_type_id)?.name
+                    }}</v-tooltip>
                                         </v-card>
                                     </td>
                                 </tr>
                             </template>
 
                             <!-- hide footer -->
+
                             <template #bottom></template>
                         </v-data-table>
                     </v-card-text>
@@ -532,16 +621,18 @@ function updateCurrentYear(event: number) {
                     <v-card-text>
                         <v-data-table :loading="loading" items-per-page="12" :items="annualCalendarTable.calendar"
                             :headers="(annualCalendarTable.headers as any)" id="timeoffTable" class="timeoff-display">
+
                             <template v-slot:headers="{ columns }">
                                 <tr>
                                     <th><!-- Month Column --></th>
                                     <th v-for="(header, i) in columns" :key="i" :class="[(header as any).class]"
                                         :style="{ width: header.width, }" class="px-0 text-center">
                                         <span class="pa-2 font-weight-bold">{{
-                                            header.title }}</span>
+                        header.title }}</span>
                                     </th>
                                 </tr>
                             </template>
+
                             <template v-slot:body="{ items }">
                                 <tr v-for="(item, i) in  items " :key="i">
                                     <td class="fix px-0 font-weight-bold">
@@ -550,8 +641,9 @@ function updateCurrentYear(event: number) {
                                     <template v-for="(dayGroup, j) in item" :key="'dayGroup'+j">
                                         <td :colspan="(typeof dayGroup == 'number' || dayGroup == null) ? 1 : (dayGroup as TimeoffGroup).values.length"
                                             class="px-0 text-center">
-                                            <v-card elevation="0" v-if="(typeof dayGroup == 'number' || dayGroup == null)"
-                                                @click="attendanceRecordDialog = true">
+                                            <v-card elevation="0"
+                                                v-if="(typeof dayGroup == 'number' || dayGroup == null)"
+                                                @click="dayGroup != null ? addAttendance(dayGroup, i) : ''">
                                                 <div class="d-flex justify-space-between text-center">
                                                     <span class="pa-2 flex-grow-1">{{ dayGroup }}</span>
                                                 </div>
@@ -562,13 +654,13 @@ function updateCurrentYear(event: number) {
                                                 <div class="d-flex justify-space-between text-center">
                                                     <span v-for="(dayOff, k) in (dayGroup as TimeoffGroup).values"
                                                         :key="'dayOff' + k" class="pa-2 flex-grow-1">{{
-                                                            dayOff
-                                                        }}</span>
+                        dayOff
+                    }}</span>
                                                 </div>
                                                 <v-tooltip activator="parent" location="bottom">{{
                                                     getTimeofOption((dayGroup as
-                                                        TimeoffGroup).attendance_leave_type_id)?.name
-                                                }}</v-tooltip>
+                                                    TimeoffGroup).attendance_leave_type_id)?.name
+                                                    }}</v-tooltip>
                                             </v-card>
                                         </td>
                                     </template>
@@ -576,6 +668,7 @@ function updateCurrentYear(event: number) {
                             </template>
 
                             <!-- hide footer -->
+
                             <template #bottom></template>
                         </v-data-table>
                     </v-card-text>

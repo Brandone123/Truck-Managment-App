@@ -88,7 +88,7 @@ const rules = computed(() => {
 })
 
 const save = () => {
-  employeeStore.updateEmployee(employeeApproverInfo.value);
+  employeeStore.updateEmployee({id: employeeApproverInfo.value.id, approver_id: employeeApproverInfo.value.approver_id});
   dialog.value = false;
 };
 

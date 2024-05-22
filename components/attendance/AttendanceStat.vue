@@ -2,11 +2,10 @@
      <client-only>
       <apexchart
       type="bar"
-      height="300px"
-      width="700px"
       :options="chartOptions"
       :series="chartData"
       :data="chartData"
+      class="responsive-chart"
       >
       </apexchart>
     </client-only>
@@ -59,3 +58,48 @@ const chartOptions = {
         },
       ];
 </script>
+
+<style>
+
+@media (min-width: 1600px) and (max-width: 1800px){
+  .responsive-chart {
+    height: 350px;
+    width: 550px;
+  }
+}
+
+@media (min-width: 1400px) and (max-width: 1599px){
+  .responsive-chart {
+    height: 350px;
+    width: 550px;
+  }
+}
+
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .responsive-chart {
+    height: 320px;
+    width: 540px;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  .responsive-chart {
+    height: 300px;
+    width: 520px;
+  }
+}
+
+@media (max-width: 767px) {
+  .responsive-chart {
+    height: 250px;
+    width: 420px;
+  }
+}
+
+@media (max-width: 479px) {
+  .responsive-chart {
+    height: 200px;
+    width: 320px;
+  }
+}
+</style>

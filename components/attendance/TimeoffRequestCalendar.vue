@@ -2,6 +2,8 @@
 import { ref, computed } from "vue"
 import type { TimeoffRequest } from '~/types/attendance/timeoff_request';
 import type { EmployeeInfo } from '~/types/store/employee';
+import type { LeaveApproverInfo } from '~/types/attendance/leave_approver';
+import type { LeavePolicyInfo } from '~/types/attendance/leave_policy';
 
 interface YearMonth {
     year: number;
@@ -38,6 +40,13 @@ const { employeeList } = storeToRefs(employeeStore)
 const departmentStore = useDepartmentStore()
 const { departmentList } = storeToRefs(departmentStore)
 
+const leaveApproverStore = useLeaveApproverStore()
+const { leaveApproverList } = storeToRefs(leaveApproverStore)
+
+const leavePolicyStore = useLeavePolicyStore()
+const { leavePolicyList } = storeToRefs(leavePolicyStore)
+
+
 /********************
  *MOUNTED HOOKS
 ********************/
@@ -46,6 +55,8 @@ onMounted(() => {
     leaveTypeStore.fetchLeaveTypeList()
     departmentStore.fetchDepartmentList()
     timeoffRequestStore.loadTimeoffRequests()
+    leavePolicyStore.fetchLeavePolicyList()
+    leaveApproverStore.fetchLeaveApproverList()
     employeeStore.fetchEmployeeList()
 })
 
@@ -61,6 +72,13 @@ const current_department_id = ref(null)
 const editedAttendanceRecord = ref({});
 const attendanceRecordDialog = ref(false)
 const updatingAttendanceRecord = ref(false)
+
+const selectedEmployee = ref<number | null>(null)
+const selectedDate = ref<string | null>(null)
+
+//Incomplete Employee Profile 
+const showIncompleteTimeoffProfile = ref<boolean>(false)
+const incompleteProfileMessageList = ref<string[]>([]);
 
 /********************
  *COMPUTED PROPERTIES
@@ -274,6 +292,15 @@ function customTableFilter(value: any, query: any, item: any) {
 function showEditTimeoff(timeoff_id: number) {
     let time_off = timeoffRequestList.value.find((item: TimeoffRequest) => item.id == timeoff_id)
     if (time_off) {
+
+        //validate employeeInfo
+        const errorList = validateEmployeeProfile(time_off.employee_id)
+        if (errorList.length) {
+            incompleteProfileMessageList.value = errorList
+            showIncompleteTimeoffProfile.value = true
+            return
+        }
+
         editedAttendanceRecord.value = time_off
         updatingAttendanceRecord.value = true
         attendanceRecordDialog.value = true
@@ -349,6 +376,71 @@ function getTooltipText(dayGroup: TimeoffGroup) {
     }
 }
 
+function getLeavePolicy(leave_policy_id: number) {
+    return leavePolicyList.value.find((item: LeavePolicyInfo) => item.id == leave_policy_id)
+}
+
+function addAttendance(monthDay: number, employee: EmployeeInfo) {
+    //validate employeeInfo
+    const errorList = validateEmployeeProfile(employee.id)
+    if (errorList.length) {
+        incompleteProfileMessageList.value = errorList
+        showIncompleteTimeoffProfile.value = true
+        useLayoutStore().setStatusMessage('Incomplete Employee Profile', 'error')
+        return
+    }
+
+    const year: number = currentDate.value.getFullYear();
+    const month: number = currentDate.value.getMonth();
+    let date = new Date(year, month, monthDay + 1)
+
+    if (date.getTime() < new Date().getTime()) {
+        useLayoutStore().setStatusMessage('Select a date greater than or equal to today', 'error')
+        return
+    }
+
+    //validate leave policy delay period
+    let requestValidFrom =  new Date()
+    let min_notice_period = getLeavePolicy(employee.leave_policy_id as number)?.min_notice_period || 0
+
+
+    if (min_notice_period > 0) {
+        min_notice_period -= 1
+    }
+
+    requestValidFrom.setDate(requestValidFrom.getDate() + min_notice_period)
+
+    // check if current date meets the minimum wait time
+    if (date.getTime() < requestValidFrom.getTime()) {
+        console.log('date does not meet criteria')
+        let store = useLayoutStore().setStatusMessage(`Requests Available from ${requestValidFrom.toISOString().substring(0, 10)}`, 'error')
+        return
+    }
+
+
+    selectedDate.value = date.toISOString().substring(0, 10)
+    selectedEmployee.value = employee.id as number
+    attendanceRecordDialog.value = true
+}
+
+function closeTimeoffProfileErrorDialog(dialogValue: boolean) {
+    incompleteProfileMessageList.value = []
+    showIncompleteTimeoffProfile.value = dialogValue
+}
+
+function validateEmployeeProfile(employeeId: number | null | undefined) {
+    let response = []
+    if (employeeId) {
+        const employee = employeeList.value.find((item: EmployeeInfo) => item.id == employeeId)
+        if (employee && !leaveApproverList.value.some((item: LeaveApproverInfo) => item.id == employee.approver_id)) {
+            response.push('No Valid Leave Approver Assigned for this employee')
+        }
+        if (employee && !leavePolicyList.value.some((item: LeavePolicyInfo) => item.id == employee.leave_policy_id)) {
+            response.push('No Valid Leave Policy Assigned for this employee')
+        }
+    }
+    return response
+}
 </script>
 
 <template>
@@ -358,7 +450,8 @@ function getTooltipText(dayGroup: TimeoffGroup) {
             <div>
                 <AttendanceAddTimeoffRequest :show="attendanceRecordDialog" @addInfo="addTimeoff" @editInfo="editTimeoff"
                     @update:show="updateAttendanceRecord" :updating="updatingAttendanceRecord"
-                    :item="(editedAttendanceRecord as any)" :employees="employeeList" />
+                    :item="(editedAttendanceRecord as any)" :employees="employeeList"
+                    :selectedEmployee="(selectedEmployee as any)" :selectedDate="(selectedDate as any)" />
             </div>
         </div>
         <v-row class="my-3 px-3">
@@ -413,7 +506,7 @@ function getTooltipText(dayGroup: TimeoffGroup) {
                                 <td :colspan="typeof dayGroup == 'number' ? 1 : dayGroup.values.length"
                                     class="px-0 text-center">
                                     <v-card elevation="0" v-if="(typeof dayGroup == 'number')"
-                                        @click="attendanceRecordDialog = true">
+                                        @click="addAttendance(dayGroup, item.employee_info)">
                                         <div class="d-flex justify-space-between text-center">
                                             <span class="pa-2 flex-grow-1">{{ dayGroup }}</span>
                                         </div>
@@ -442,6 +535,9 @@ function getTooltipText(dayGroup: TimeoffGroup) {
             </v-responsive>
 
         </v-skeleton-loader>
+
+        <AttendanceIncompleteTimeoffProfile :show="showIncompleteTimeoffProfile"
+            @update:show="closeTimeoffProfileErrorDialog" :messageList="incompleteProfileMessageList" />
     </div>
 </template>
 
