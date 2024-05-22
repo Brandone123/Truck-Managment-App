@@ -121,13 +121,16 @@ const formattedDepartmentList = computed(() => {
 });
 
 const employeeListStore = useEmployeeStore()
+const {employeeList} = storeToRefs(employeeListStore)
 
 const defaultEmployee = ref<EmployeeInfo>({
     id: null,
     user_id: null,
     first_name: null,
     last_name: null,
-    email: null,
+    user: {
+      email: null,
+    },
     department_id: null,
     role_id: null,
     address1: null,
@@ -140,6 +143,12 @@ const defaultEmployee = ref<EmployeeInfo>({
 })
 
 const employeeInfo = ref(defaultEmployee.value)
+
+const employeeWithEmail = computed(() => {
+  const employeeId = employeeInfo.value.id;
+  const employeeItem = employeeList.value.find(employee => employee.id === employeeId);
+  return employeeItem && employeeItem.user ? employeeItem.user.email : null;
+});
 
 const title = computed(() => {
     return props.updating ? 'Employee Info' : 'Create Employee'
@@ -171,6 +180,7 @@ const resetForm = () => {
 watch(dialog, (val) => {
     if (val && props.updating) {
         employeeInfo.value = props.item as EmployeeInfo
+        employeeInfo.value.email = employeeWithEmail.value
     } else {
         // stopInfo.value = defaultEmployee.value
         resetForm()

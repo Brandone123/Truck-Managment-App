@@ -26,7 +26,7 @@ const employeeHeaders = ref([
     { title: 'FIRST NAME ', key: 'first_name', class: "no-wrap" },
     { title: 'LAST NAME', key: 'last_name', class: "no-wrap" },
     { title: 'ROLE', key: 'role_id', class: "no-wrap" },
-    { title: 'EMAIL', key: 'email', class: "no-wrap" },
+    { title: 'EMAIL', key: 'user.email', class: "no-wrap" },
     { title: 'DEPARTMENT', key: 'department_id', class: "no-wrap" },
     { title: 'ADDRESS 1 ', key: 'address1', class: "no-wrap" },
     { title: 'ADDRESS 2', key: 'address2', class: "no-wrap" },

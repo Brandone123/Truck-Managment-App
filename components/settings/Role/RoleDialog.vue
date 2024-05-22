@@ -37,23 +37,24 @@
                     <v-card-title>Module</v-card-title>
                     <v-divider></v-divider>
                     <div style="overflow-y: auto; max-height:400px;">
-                      <div class="d-flex align-center" v-for="(item, i) in Object.keys(roleInfo.permissions)" :key="i">
+                      <div class="d-flex align-center" v-for="(item, i) in Object.keys(roleInfo.permissions as any)"
+                        :key="i">
                         <v-checkbox-btn hide-details color="primary"
-                          v-model="roleInfo.permissions[item].value"></v-checkbox-btn>
+                          v-model="(roleInfo.permissions as any)[item].value"></v-checkbox-btn>
                         <v-btn :color="selectedModule == item ? 'primary' : ''" density="compact" variant="text"
-                          class="text-none" :disabled="!roleInfo.permissions[item].value"
+                          class="text-none" :disabled="!(roleInfo.permissions as any)[item].value"
                           @click="selectedModule = item">{{
-                            roleInfo.permissions[item].title }}</v-btn>
+                            (roleInfo.permissions as any)[item].title }}</v-btn>
                       </div>
                     </div>
                   </v-col>
                   <v-divider vertical></v-divider>
                   <v-col cols="8">
-                    <v-card-title>{{ roleInfo.permissions[selectedModule]?.title }} Permissions</v-card-title>
+                    <v-card-title>{{ (roleInfo.permissions as any)[selectedModule]?.title }} Permissions</v-card-title>
                     <v-divider></v-divider>
                     <SharedTreeView style="overflow-y: auto; max-height:400px;" v-if="selectedModule != null"
-                      :items="roleInfo.permissions[selectedModule]?.permissions"
-                      :activated="roleInfo.permissions[selectedModule].value" />
+                      :items="(roleInfo.permissions as any)[selectedModule]?.permissions"
+                      :activated="(roleInfo.permissions as any)[selectedModule].value" />
                     <div v-else class="text-center">Click on an active module to set its permissions</div>
                   </v-col>
                 </v-row>
@@ -74,10 +75,11 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { ref, computed, toRefs, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { RoleInfo } from '@/types/store/role'
 import { useRoleStore } from '~/stores/role';
 import { userPermissions } from "~/data/permissions";
+import type { RolePermissions } from '@/types/store/role'
 
 const emit = defineEmits(['update:show', 'addRole', 'editRole'])
 
@@ -98,26 +100,26 @@ const props = defineProps({
 
 const step = ref(1)
 
-const selectedModule = ref<string | null>(null)
+const selectedModule = ref(Object.keys(userPermissions)[0])
 
 const roleForm = ref(null)
 
 const roleListStore = useRoleStore()
 
-const defaultRole = ref<RoleInfo>({
+const defaultRole: RoleInfo = {
   id: null,
   name: null,
   description: null,
-  permissions: deepCopy(userPermissions)
-})
+  permissions: deepCopy(userPermissions) as RolePermissions
+}
 
-const roleInfo = ref<RoleInfo>(deepCopy(defaultRole.value))
+const roleInfo = ref<RoleInfo>(deepCopy(defaultRole) as RoleInfo)
 
 const title = computed(() => {
   return props.updating ? 'Role Info' : 'Create Role'
 })
 
-function deepCopy(item: Object): Object {
+function deepCopy(item: any): any {
   return JSON.parse(JSON.stringify(item))
 }
 
@@ -152,13 +154,13 @@ const resetForm = () => {
   if (roleForm.value) {
     (roleForm.value as HTMLFormElement).reset(); // Reset the form
   }
-  roleInfo.value = deepCopy(defaultRole.value)
+  roleInfo.value = deepCopy(defaultRole) as RoleInfo
   step.value = 1
 }
 
 watch(dialog, (val) => {
   if (val && props.updating) {
-    roleInfo.value = props.item
+    roleInfo.value = props.item as RoleInfo
   } else {
     // stopInfo.value = defaultRole.value
     resetForm()
@@ -166,5 +168,4 @@ watch(dialog, (val) => {
 })
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

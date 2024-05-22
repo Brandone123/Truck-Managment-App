@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { storeToRefs } from 'pinia'
 // import { useLoadTemplateStore } from '@/stores/settings/dispatch/load_template'
 import { defineProps, defineEmits } from 'vue'
-import type { LoadInfo, StopInfo } from '@/types/store/load'
+import type { LoadInfo, StopInfo } from '~/types/dispatch/load'
 const emit = defineEmits(['editLoadTemplate', 'deleteLoadTemplate'])
 
 const props = defineProps({
