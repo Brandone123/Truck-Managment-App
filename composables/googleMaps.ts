@@ -1,244 +1,321 @@
-import { ref } from 'vue';
 import { Loader } from '@googlemaps/js-api-loader';
-// import { MapOptions, Map, LatLngLiteral } from 'google.maps';
-interface customControlButton {
-    id: string;
-    position: string;
+interface CustomControlButton {
+  id: string;
+  position: string;
 }
 
-type mapArguments = {
-    customButtons: customControlButton[],
-    mapContainerID: string,
-    zoomControlsContainerID: string,
-    index: string
+interface MapArguments {
+  customButtons: CustomControlButton[];
+  mapContainerID: string;
+  zoomControlsContainerID: string;
+  index: string;
+}
+
+interface MarkerDataOptions {
+  backgroundColor: string;
+}
+
+interface Marker {
+  position: google.maps.LatLng; index: number[]
+}
+
+interface MarkerAddress extends Marker {
+  address: string;
 }
 
 type ControlPosition =
-    | "TOP_LEFT"
-    | "TOP_CENTER"
-    | "TOP_RIGHT"
-    | "LEFT_TOP"
-    | "LEFT_CENTER"
-    | "LEFT_BOTTOM"
-    | "RIGHT_TOP"
-    | "RIGHT_CENTER"
-    | "RIGHT_BOTTOM"
-    | "BOTTOM_LEFT"
-    | "BOTTOM_CENTER"
-    | "BOTTOM_RIGHT";
+  | 'TOP_LEFT'
+  | 'TOP_CENTER'
+  | 'TOP_RIGHT'
+  | 'LEFT_TOP'
+  | 'LEFT_CENTER'
+  | 'LEFT_BOTTOM'
+  | 'RIGHT_TOP'
+  | 'RIGHT_CENTER'
+  | 'RIGHT_BOTTOM'
+  | 'BOTTOM_LEFT'
+  | 'BOTTOM_CENTER'
+  | 'BOTTOM_RIGHT';
 
-const loader = new Loader({
-    apiKey: 'AIzaSyCnwkni9A9j10skcPro3kiefhsz62AoRFU',
-    version: 'weekly',
-    libraries: ['drawing', 'geometry', 'places'],
-});
+class GoogleMap {
+  private loader: Loader;
+  private mapOptions: google.maps.MapOptions | undefined;
+  public map: google.maps.Map | undefined;
 
-function map() {
-    const featureOpts = [
-        { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#dbdbdb" }] },
-        { featureType: "water", elementType: "labels", stylers: [{ visibility: "on" }] },
-        {
-            featureType: "administrative.locality",
-            elementType: "labels.text.stroke",
-            stylers: [{ visibility: "on" }, { color: "#ffffff" }, { weight: 0.1 }],
-        },
-        {
-            featureType: "administrative.country",
-            elementType: "labels.text.stroke",
-            stylers: [{ color: "#ffffff" }, { weight: 0.1 }],
-        },
-        {
-            featureType: "road.highway",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#dbdbdb" }],
-        },
-        { featureType: "poi", elementType: "geometry.fill", stylers: [{ color: "#dbdbdb" }] },
-        {
-            featureType: "landscape.natural.terrain",
-            elementType: "geometry",
-            stylers: [{ visibility: "off" }],
-        },
-        {
-            featureType: "landscape.natural",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#ebebeb" }],
-        },
-        { featureType: "poi", elementType: "geometry.fill", stylers: [{ color: "#ebebeb" }] },
-        {
-            featureType: "administrative.neighborhood",
-            elementType: "labels",
-            stylers: [{ color: "#000000" }, { weight: 0.1 }],
-        },
-        {
-            featureType: "administrative.province",
-            elementType: "labels",
-            stylers: [{ color: "#000000" }, { weight: 0.1 }],
-        },
-        { featureType: "road.highway", elementType: "labels", stylers: [{ visibility: "off" }] },
-        {
-            featureType: "transit",
-            elementType: "geometry.fill",
-            stylers: [{ visibility: "off" }, { color: "#ebebeb" }],
-        },
-        { featureType: "poi.park", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-        {
-            featureType: "poi.park",
-            elementType: "labels.text",
-            stylers: [{ color: "#000000" }, { weight: 0.1 }],
-        },
-        { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#dbdbdb" }] },
-        {
-            featureType: "road.highway.controlled_access",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#b0b0b0" }],
-        },
-        {
-            featureType: "road.highway.controlled_access",
-            elementType: "geometry.stroke",
-            stylers: [{ visibility: "off" }],
-        },
-        {
-            featureType: "road.highway",
-            elementType: "geometry.stroke",
-            stylers: [{ visibility: "simplified" }],
-        },
-        {
-            featureType: "road.highway",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#b0b0b0" }],
-        },
-        { featureType: "landscape.man_made", elementType: "all", stylers: [{ color: "#ebebeb" }] },
-        {
-            featureType: "administrative.locality",
-            elementType: "labels",
-            stylers: [{ color: "#000000" }],
-        },
-        {
-            featureType: "road",
-            elementType: "labels.icon",
-            stylers: [{ visibility: "on" }, { saturation: -100 }],
-        },
-        { featureType: "all", elementType: "labels.icon", stylers: [{ saturation: -100 }] },
-        { featureType: "all", elementType: "labels", stylers: [{ saturation: -100 }] },
-    ]
+  private MAP_CENTER: google.maps.LatLngLiteral = {
+    lat: 33.2202301,
+    lng: -96.9318577,
+  };  //US_MAP_CENTER as default
 
-    const US_MAP_CENTER: google.maps.LatLngLiteral = {
-        lat: 33.2202301,
-        lng: -96.9318577,
+  constructor(loader: Loader) {
+    this.loader = loader
+    // new Loader({
+    //   apiKey: apiKey,
+    //   version: 'weekly',
+    //   libraries: ['drawing', 'geometry', 'places', 'routes', 'marker'],
+    // });
+  }
+
+  // factory used to initialize class from async data
+  static async init() {
+    const config = useRuntimeConfig()
+    const loader = new Loader({
+      apiKey: config.public.googleMapsApi || '',
+      version: 'weekly',
+      libraries: ['drawing', 'geometry', 'places', 'routes', 'marker'],
+    });
+
+    console.log('window.google is: ')
+    console.log(window.google)
+
+    if (!window.google) {
+      await loader.load()
     }
 
-    // Define the mapOptions variable as a Ref<MapOptions | undefined>
-    const mapOptions = ref<google.maps.MapOptions | undefined>();
+    return new GoogleMap(loader)
+  }
 
-    const map = ref<google.maps.Map | undefined>();
+  private displayMap(mapContainerID: string, index: string): void {
+    this.mapOptions = {
+      center: this.MAP_CENTER,
+      zoom: 4,
+      maxZoom: 25,
+      minZoom: 1,
+      zoomControl: false,
+      draggable: true,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      disableDefaultUI: true,
+      restriction: {
+        latLngBounds: {
+          north: 49.382808,
+          south: 24.521208,
+          east: -66.945392,
+          west: -124.736342,
+        },
+      },
+    };
 
-    function displayMap(mapContainerID: string, index: string): void {
-        mapOptions.value = {
-            center: US_MAP_CENTER,
-            zoom: 4,
-            maxZoom: 25,
-            minZoom: 1,
-            zoomControl: false,
-            draggable: true,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            disableDefaultUI: true,
-            restriction: {
-                latLngBounds: {
-                    north: 49.382808,
-                    south: 24.521208,
-                    east: -66.945392,
-                    west: -124.736342,
-                },
-            },
-        }
-
-        let mapElement = document.getElementById(mapContainerID + index) as HTMLElement
-        if (!mapElement) {
-            return
-        }
-
-        map.value = new google.maps.Map(
-            mapElement,
-            {
-                ...mapOptions.value,
-            })
+    const mapElement = document.getElementById(mapContainerID + index) as HTMLElement;
+    if (!mapElement) {
+      return;
     }
 
-    function initMap(buttons: customControlButton[], mapContainerID: string, zoomControlsContainerID: string, index: string) {
+    this.map = new google.maps.Map(mapElement, {
+      ...this.mapOptions,
+    });
+  }
 
-        displayMap(mapContainerID, index)
+  private zoomControl(index: string): void {
+    const zoomIn = document.getElementById('zoomIn' + index);
+    const zoomOut = document.getElementById('zoomOut' + index);
+    const center = document.getElementById('center' + index);
 
-        let zoomControlButtons = document.getElementById(zoomControlsContainerID + index) as HTMLElement | null
-        if (zoomControlButtons != null) {
-            addControlButton('RIGHT_BOTTOM', zoomControlButtons);
-            zoomControl(index)
-            zoomControlButtons.style.display = 'block';
+    google.maps.event.addDomListener(zoomOut as Object, 'click', () => {
+      if (typeof this.map !== 'undefined') {
+        const currentZoomLevel = this.map.getZoom();
+        if (currentZoomLevel !== 0 && typeof currentZoomLevel !== 'undefined') {
+          this.map.setZoom(currentZoomLevel - 1);
         }
+      }
+    });
 
-        buttons.forEach((button) => {
-            let controlButton = document.getElementById(button.id) as HTMLElement | null
-            if (controlButton != null && button.position) {
-                addControlButton(button.position as ControlPosition, controlButton)
-                controlButton!.style.display = 'block'
-            }
-        })
+    google.maps.event.addDomListener(zoomIn as Object, 'click', () => {
+      if (typeof this.map !== 'undefined') {
+        const currentZoomLevel = this.map.getZoom() || 0;
+        if (currentZoomLevel !== 21) {
+          this.map.setZoom(currentZoomLevel + 1);
+        }
+      }
+    });
+
+    google.maps.event.addDomListener(center as Object, 'click', () => {
+      if (
+        typeof this.map !== 'undefined' &&
+        typeof this.mapOptions !== 'undefined'
+      ) {
+        this.map.setZoom(this.mapOptions.zoom as number);
+        this.map.panTo(this.MAP_CENTER);
+      }
+    });
+  }
+
+  private addControlButton(position: ControlPosition, element: HTMLElement): void {
+    if (typeof this.map !== 'undefined') {
+      this.map.controls[google.maps.ControlPosition[position]].push(element);
+    }
+  }
+
+  public renderMap({
+    customButtons,
+    mapContainerID,
+    zoomControlsContainerID,
+    index,
+  }: MapArguments): void {
+    this.displayMap(mapContainerID, index);
+
+    const zoomControlButtons = document.getElementById(
+      zoomControlsContainerID + index
+    ) as HTMLElement | null;
+
+    if (zoomControlButtons !== null) {
+      this.addControlButton('RIGHT_BOTTOM', zoomControlButtons);
+      this.zoomControl(index);
+      zoomControlButtons.style.display = 'block';
     }
 
-    function zoomControl(index: string): void {
-        var zoomIn = document.getElementById('zoomIn' + index);
-        var zoomOut = document.getElementById('zoomOut' + index);
-        var center = document.getElementById('center' + index)
+    customButtons.forEach((button) => {
+      const controlButton = document.getElementById(button.id) as
+        | HTMLElement
+        | null;
 
-        google.maps.event.addDomListener(zoomOut as Object, 'click', function () {
-            if(typeof map.value != 'undefined'){
-                var currentZoomLevel = map.value.getZoom();
-                if (currentZoomLevel != 0 && typeof currentZoomLevel != 'undefined') {
-                    map.value.setZoom(currentZoomLevel - 1);
-                } 
-            }
-           
-        });
+      if (controlButton !== null && button.position) {
+        this.addControlButton(button.position as ControlPosition, controlButton);
+        controlButton.style.display = 'block';
+      }
+    });
+  }
 
-        google.maps.event.addDomListener(zoomIn as Object, 'click', function () {
-            if (typeof map.value != 'undefined') {
-                var currentZoomLevel = map.value.getZoom() || 0;
-                if (currentZoomLevel != 21) {
-                    map.value.setZoom(currentZoomLevel + 1);
+  public SvgToBase64Image(svgCode: string) {
+    const base64 = btoa(svgCode);
+    return `data:image/svg+xml;base64,${base64}`;
+  }
+
+  private getMarkerUrl(markerText: string | number, options = { backgroundColor: '#1866c0' } as MarkerDataOptions) {
+    // Create a custom pin element
+    const svgCode = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+              <style>
+                circle {
+                  fill: ${options?.backgroundColor};
+                  transition: fill 0.3s ease;
                 }
-            }
-
-        });
-
-        google.maps.event.addDomListener(center as Object, 'click', function () {
-            if (typeof map.value != 'undefined' && typeof mapOptions.value != 'undefined') {
-                map.value.setZoom(mapOptions.value.zoom as number);
-                map.value.panTo(US_MAP_CENTER);
-            }
-        });
-    }
-
-    function addControlButton(position: ControlPosition, element: HTMLElement): void {
-        if (typeof map.value != 'undefined') {
-            map.value.controls[google.maps.ControlPosition[position]].push(element);
-        }
-    };
-
-    function renderMap({ customButtons, mapContainerID, zoomControlsContainerID, index, }: mapArguments): void {
-        // hackMap()
-        loader.load().then(() => {
-            // Initialize the map here
-            initMap(customButtons, mapContainerID, zoomControlsContainerID, index)
-        }).catch((e: any) => {
-            // Handle map loading error
-        });
-    };
+          
+                svg:hover circle {
+                  fill: #4caf4f;
+                }
+                text{
+                  font-family: "Roboto", sans-serif;
+                  font-size: 80px;
+                }
+              </style>
+          
+              <circle cx="100" cy="100" r="90" />
+              <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" fill="white" font-size="48">
+                ${markerText}
+              </text>
+            </svg>`;
 
     return {
-        renderMap
+      url: this.SvgToBase64Image(svgCode),
+      scaledSize: new google.maps.Size(30, 30)
     }
+  }
+
+  public setMarkers(directions: google.maps.DirectionsResult) {
+    let _this = this
+
+    let markers: MarkerAddress[] = []
+    const route = directions?.routes[0]
+    const stopsCount: number = directions?.geocoded_waypoints?.length || 0
+    const startDirection = route.legs[0].start_location;
+    // plotMarker(startDirection, 1)
+    markers.push({ position: startDirection, address: route.legs[0].start_address, index: [1] })
+    const endDirection = route.legs[route.legs.length - 1].end_location;
+    // plotMarker(endDirection, stopsCount)
+    markers.push({ position: endDirection, address: route.legs[route.legs.length - 1].end_address, index: [stopsCount] })
+
+    if (stopsCount > 2) {
+      directions?.routes[0].legs.slice(1).forEach((leg, index) => {
+        // plotMarker(leg.start_location, index+2)
+        markers.push({ position: leg.start_location, address: leg.start_address, index: [index + 2] })
+      })
+    }
+
+    const mergedArray = Object.values(
+      markers.reduce((acc: { [key: string]: { position: google.maps.LatLng; address: string; index: number[] } }, { position, address, index }) => {
+        const key: string = address;
+        if (!acc[key]) {
+          acc[key] = { position, address, index }; // Initialize the entry if it doesn't exist
+        } else {
+          acc[key].index = acc[key].index.concat(index); // Merge index arrays for the same data value
+        }
+        return acc;
+      }, {})
+    );
+
+    //plot markers
+    mergedArray.forEach((marker: MarkerAddress) => {
+      //markers are sorted in increasing order before being joint
+      plotMarker(marker, marker.index.sort((a, b) => a - b).join(','))
+    })
+
+    function plotMarker(markerData: MarkerAddress, index: string) {
+      let markerImage = _this.getMarkerUrl(index)
+      let hoveredMarkerImage = _this.getMarkerUrl(index, { backgroundColor: '#4caf4f' })
+
+      const addressInfo = markerData.address.split(',').map(item => `<span>${item}</span><br>`).join('');
+
+      let infoWindow = new google.maps.InfoWindow({
+        content: `<div style="font-weight:bold;">${addressInfo}</div>`
+      })
+      let marker = new google.maps.Marker({
+        position: markerData.position,//{ lat: 37.7749, lng: -122.4194 },
+        map: _this.map,
+        icon: markerImage
+      })
+      // Add event listeners for hover effect
+      marker.addListener('mouseover', () => {
+        marker.setIcon(hoveredMarkerImage)
+        infoWindow.open({
+          anchor: marker,
+          map: _this.map,
+        })
+      })
+
+      marker.addListener("mouseout", function () {
+        marker.setIcon(markerImage);
+        infoWindow.close()
+      });
+    }
+  }
+
+  public directionsRenderer(directions: google.maps.DirectionsResult) {
+
+    let directionsRenderer = new google.maps.DirectionsRenderer({
+      map: this.map, // Set the map for the renderer
+      suppressMarkers: true // Disable the default markers for waypoints
+    });
+
+    directionsRenderer.setDirections(directions);
+
+    // Create a marker with a custom pin
+    this.setMarkers(directions)
+
+    this.setZoom(25)
+    this.panTo?.(directions?.routes[0].legs[0].start_location as any)
+  }
+
+  public setZoom(zoom: number): void {
+    this.map?.setZoom(zoom)
+  }
+
+  public panTo(point: google.maps.LatLngLiteral): void {
+    this.map?.panTo(point);
+  }
+
+  async directionService(request: google.maps.DirectionsRequest) {
+    return new Promise<{ data?: google.maps.DirectionsResult, error?: boolean, }>((resolve, reject) => {
+      new google.maps.DirectionsService().route(request, (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+        if (status === google.maps.DirectionsStatus.OK) {
+          // Directions request successful, handle the response
+          // console.log('Directions: ', response?.routes[0].legs);
+          resolve({ data: response as google.maps.DirectionsResult });
+        } else {
+          // Directions request failed
+          reject({ error: status });
+        }
+      });
+    });
+  }
 }
 
-export default function googleMaps() {
-    const instance = map();
-    return instance
-}
+export default GoogleMap;

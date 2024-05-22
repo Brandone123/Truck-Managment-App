@@ -1,11 +1,16 @@
-import type {UseFetchOptions} from 'nuxt/app'
-import {useRequestHeaders} from "nuxt/app";
+import type { UseFetchOptions } from 'nuxt/app'
+import { useRequestHeaders } from "nuxt/app";
 
 export function useApiFetch<T>(path: string, options: UseFetchOptions<T> = {}) {
 
+  const config = useRuntimeConfig() 
+  const baseUrl = config.public.baseUrl || "http://localhost:3000"
+  const apiUrl = config.public.apiUrl || "http://localhost:8000"
+
   let headers: any = {
     accept: "application/json",
-    referer: "http://localhost:3000"
+    referer: baseUrl,
+    "Content-Type": "application/json"
   }
 
   const token = useCookie('XSRF-TOKEN');
@@ -21,7 +26,7 @@ export function useApiFetch<T>(path: string, options: UseFetchOptions<T> = {}) {
     }
   }
 
-  return useFetch("http://localhost:8000" + path, {
+  return useFetch(apiUrl + path, {
     credentials: "include",
     watch: false,
     ...options,
