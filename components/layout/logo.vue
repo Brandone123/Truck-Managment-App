@@ -7,7 +7,7 @@ const secondary = ref('rgb(var(--v-theme-secondary))');
 <template>
     <div class="logo">
         <NuxtLink to="/" style="text-decoration:none;">
-            <span class="text-h5 text-primary" style="cursor: pointer">Moonstar Express</span>
+            <span class="text-h5 text-primary" style="cursor: pointer">Moon Star Express</span>
         </NuxtLink>
         <!-- <NuxtLink to="/"> -->
         <!-- <svg width="174" height="26" viewBox="0 0 174 26" fill="none" xmlns="http://www.w3.org/2000/svg">
