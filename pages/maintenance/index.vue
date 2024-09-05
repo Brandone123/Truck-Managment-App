@@ -1,107 +1,140 @@
 <template>
-    <div>
-        <v-btn @click="openPopup">Add Item</v-btn>
+  <div>
+    <div class="d-flex justify-space-between mb-4">
+      <span class="text-primary text-h6">Dashboard</span>
+      <!-- <v-btn color="primary">Create Inspection Form</v-btn> -->
+      <div class="d-flex justify-space-between margin-10">
+        <ActiveWidgetSelector />
+      </div>
     </div>
+
+
+
+    <v-row>
+      <v-col cols="12" md="6">
+        <RepairPriorityClassTrends />
+      </v-col>
+      <v-col cols="12" md="6">
+        <v-row>
+          <v-col cols="12" md="6">
+            <ServiceReminders />
+          </v-col>
+          <v-col cols="12" md="6">
+            <TimeToResolve />
+          </v-col>
+          <v-col cols="12" md="6">
+            <OpenIssues />
+          </v-col>
+          <v-col cols="12" md="6">
+            <VehicleRenewalReminders />
+          </v-col>
+        </v-row>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <ActiveWorkOrders />
+      </v-col>
+      <v-col cols="12" md="3">
+        <ContactRenewalReminders />
+      </v-col>
+      <v-col cols="12" md="3">
+        <VehicleAssignments />
+      </v-col>
+      <v-col cols="12" md="3">
+        <VehicleStatus />
+      </v-col>
+      <v-col cols="12" md="6">
+        <v-row>
+          <v-col cols="12" md="6">
+            <VehicleLocations />
+          </v-col>
+          <v-col cols="12" md="6">
+            <CriticalFaults />
+          </v-col>
+          <v-col cols="12" md="6">
+            <FuelCosts />
+          </v-col>
+          <v-col cols="12" md="6">
+            <ServiceCosts />
+          </v-col>
+        </v-row>
+      </v-col>
+      <v-col cols="12" md="6">
+        <RecentComments />
+      </v-col>
+      <v-col cols="12" md="3">
+        <OtherCosts />
+      </v-col>
+      <v-col cols="12" md="3">
+        <TotalCosts />
+      </v-col>
+      <v-col cols="12" md="3">
+        <CostPerMeter />
+      </v-col>
+      <v-col cols="12" md="3">
+        <AllFaults />
+      </v-col>
+
+
+      <v-col cols="12" md="6">
+        <LatestMeterReadings />
+      </v-col>
+      <v-col cols="12" md="6">
+        <v-row>
+          <v-col cols="12" md="6">
+            <OverdueInspections />
+          </v-col>
+          <v-col cols="12" md="6">
+            <InspectionItemFailureRate />
+          </v-col>
+          <v-col cols="12" md="6">
+            <InspectionSubmissions />
+          </v-col>
+          <v-col cols="12" md="6">
+            <InspectionsSummary />
+          </v-col>
+        </v-row>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <OnTimeServiceCompliance />
+      </v-col>
+    </v-row>
+
+  </div>
 </template>
-  
-<script type="ts">
-import { ref, createApp, h, getCurrentInstance } from 'vue';
-//import Loads from '@/components/dispatch/Loads.vue'
 
-export default {
-    setup() {
+<script setup lang="ts">
+import RepairPriorityClassTrends from '~/components/maintenance/dashboard/widgets/RepairPriorityClassTrends.vue';
+import ServiceReminders from '~/components/maintenance/dashboard/widgets/ServiceReminders.vue';
+import TimeToResolve from '~/components/maintenance/dashboard/widgets/TimeToResolve.vue';
+import OpenIssues from '~/components/maintenance/dashboard/widgets/OpenIssues.vue';
+import VehicleRenewalReminders from '~/components/maintenance/dashboard/widgets/VehicleRenewalReminders.vue';
+import ActiveWorkOrders from '~/components/maintenance/dashboard/widgets/ActiveWorkOrders.vue';
+import ContactRenewalReminders from '~/components/maintenance/dashboard/widgets/ContactRenewalReminders.vue';
+import VehicleAssignments from '~/components/maintenance/dashboard/widgets/VehicleAssignments.vue';
+import VehicleStatus from '~/components/maintenance/dashboard/widgets/VehicleStatus.vue';
+import VehicleLocations from '~/components/maintenance/dashboard/widgets/VehicleLocations.vue';
+import CriticalFaults from '~/components/maintenance/dashboard/widgets/CriticalFaults.vue';
+import RecentComments from '~/components/maintenance/dashboard/widgets/RecentComments.vue';
+import FuelCosts from '~/components/maintenance/dashboard/widgets/FuelCosts.vue';
+import ServiceCosts from '~/components/maintenance/dashboard/widgets/ServiceCosts.vue';
+import OtherCosts from '~/components/maintenance/dashboard/widgets/OtherCosts.vue';
+import TotalCosts from '~/components/maintenance/dashboard/widgets/TotalCosts.vue';
+import CostPerMeter from '~/components/maintenance/dashboard/widgets/CostPerMeter.vue';
+import AllFaults from '~/components/maintenance/dashboard/widgets/AllFaults.vue';
+import LatestMeterReadings from '~/components/maintenance/dashboard/widgets/LatestMeterReadings.vue';
+import OverdueInspections from '~/components/maintenance/dashboard/widgets/OverdueInspections.vue';
+import InspectionItemFailureRate from '~/components/maintenance/dashboard/widgets/InspectionItemFailureRate.vue';
+import InspectionSubmissions from '~/components/maintenance/dashboard/widgets/InspectionSubmissions.vue';
+import InspectionsSummary from '~/components/maintenance/dashboard/widgets/InspectionsSummary.vue';
+import OnTimeServiceCompliance from '~/components/maintenance/dashboard/widgets/OnTimeServiceCompliance.vue';
 
-        const app = ref(null)
-        onMounted(() => {
-            app.value = getCurrentInstance();
-        });
-
-        const openPopup = () => {
-            // const popupWidth = 400;
-            // const popupHeight = 300;
-
-            // const parentWindow = window;
-            // const parentWidth = parentWindow.innerWidth;
-            // const parentHeight = parentWindow.innerHeight;
-            // const parentTop = parentWindow.screenY || parentWindow.screenTop;
-            // const parentLeft = parentWindow.screenX || parentWindow.screenLeft;
-
-            // const popupTop = parentTop + (parentHeight - popupHeight) / 2;
-            // const popupLeft = parentLeft + (parentWidth - popupWidth) / 2;
-
-            // const popup = window.open(
-            //     '',
-            //     '_blank',
-            //     `width=${popupWidth},height=${popupHeight},top=${popupTop},left=${popupLeft}`
-            // );
-
-            // popup.document.write('<div id="app"><span>this is a dialog element</span></div>');
-
-            // import('@/components/dispatch/Loads.vue').then((module) => {
-            //     const AddLoadComponent = module.default;
-            //     const app = createApp({
-            //         // ...nuxtConfig,
-            //         render: () => h(AddLoadComponent),
-            //         methods: {
-            //             // itemAdded(newItem) {
-            //             //     // Handle the added item in the parent Vue component
-            //             //     console.log('Added item:', newItem);
-            //             //     popup.close();
-            //             // },
-            //         },
-            //     });
-
-            //     // app.component('add-load-component', AddLoadComponent)
-            //     app.mount(popup.document.getElementById('app'));
-            // });
-
-            // console.log(app)
-
-            // const newApp = createApp({
-            //     render: () => h(Loads),// h(Loads),
-            // });
-
-            // newApp.config.globalProperties = { ...app.config.globalProperties };
-            // newApp.mixin(app.mixin);
-            // newApp.use(app.value.parent.proxy.$vuetify);
-            // newApp.use(app.value.proxy.$vuetify);
-            // newApp.component(app.component);
-
-
-
-            // newApp.use(app.proxy.$vuetify)
-            // newApp.mount(popup.document.getElementById('app'));
-
-            // const popupWindow = window.open('', '_blank', 'width=500,height=500');
-
-            // popupWindow.document.write('<div id="app"><span>this is a dialog element</span></div>');
-
-            // // Wait for the popup window to load
-            // popupWindow.addEventListener('load', () => {
-            //     // Create a new Vue app and mount the PopupContent component inside the popup window
-            //     const app = createApp(Loads);
-            //     app.mount(popup.document.getElementById('app'));
-            // });
-
-            const popupWindow = window.open('/detachedFlags', '_blank', 'width=500,height=500');
-
-            // Wait for the popup window to load
-            popupWindow.addEventListener('load', () => {
-                // Optionally, you can pass data to the popup component via the URL query parameters
-                // const queryParams = new URLSearchParams();
-                // queryParams.set('param1', 'value1');
-                // queryParams.set('param2', 'value2');
-                // popupWindow.location.search = queryParams.toString();
-
-                // You can also pass data through the window object
-                // popupWindow.myData = { key: 'value' };
-            });
-        };
-
-        return {
-            openPopup
-        };
-    }
-};
-
+import ActiveWidgetSelector from '~/components/maintenance/dashboard/ActiveWidgetSelector.vue';
 </script>
+
+<style scoped>
+.v-container {
+  padding: 20px;
+}
+</style>
