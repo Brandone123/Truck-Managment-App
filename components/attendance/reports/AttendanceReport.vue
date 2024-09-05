@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { ref, defineExpose } from "vue";
+import { ref, defineExpose, defineProps } from "vue";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { useAttendanceStore } from "@/stores/attendance/attendance";
 import { storeToRefs } from "pinia";
+import moment from "moment";
 
+const attendanceStore = useAttendanceStore();
+const { timeCards, payPeriodAttendanceList } = storeToRefs(attendanceStore);
+const roleStore = useRoleStore();
+const { roleList } = storeToRefs(roleStore);
+const router = useRouter();
 const currentY = ref(10);
 const currentX = ref(10);
 
@@ -16,7 +23,10 @@ const pdfDataUri = ref("");
 const dialog = ref<boolean>(false);
 
 const selectedReportType = ref<string>("attendance_Report");
+const assetStore = useAssetStore();
+const { assetList } = storeToRefs(assetStore);
 
+const serviceTaskStore = useServiceTaskStore();
 const getBase64ImageFromURL = (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -57,6 +67,15 @@ const getReport = async () => {
     var fontSize = 12;
     doc.value.setTextColor(20, 20, 20); // Setting text color to black
     var pageWidth = doc.value.internal.pageSize.getWidth();
+
+    const getEmployeePosition = (user_id: number) => {
+      let employee = timeCards.value.find(
+        (timecard: any) => timecard.id == user_id
+      );
+      return employee?.role_id
+        ? roleList.value.find((role: any) => role.id == employee?.role_id)?.name
+        : "None";
+    };
     doc.value.setFontSize(12);
     // Function to add page number to the bottom of the page
     const addPageNumber = (pdfDoc) => {
@@ -90,7 +109,6 @@ const getReport = async () => {
       currentY.value,
       { align: "left" }
     );
-
     const workorderdata = [
       ["Report Number:", `#${new Date()}`],
       ["Date:", `${new Date().toString().slice(0, 15)}`],
@@ -118,71 +136,57 @@ const getReport = async () => {
     doc.value.setFontSize(18);
 
     (currentY.value += 35),
-      doc.value.text(
-        `Employee Timeoff Report `,
-        pageWidth / 3,
-        currentY.value,
-        {
-          align: "left",
-        }
-      );
+      doc.value.text(`Attendance Report for, `, pageWidth / 3, currentY.value, {
+        align: "center",
+      });
+    doc.value.text(
+      `${moment(payPeriodAttendanceList.value.pay_period.start_date)
+        .format("MMM D YYYY")
+        .toString()
+        .slice(0, 20)} - ${moment(
+          payPeriodAttendanceList.value.pay_period.end_date
+        )
+          .format("MMM D YYYY")
+          .toString()
+          .slice(0, 20)}`,
+      pageWidth - 72,
+      currentY.value,
+      {
+        align: "center",
+      }
+    );
 
     doc.value.setFontSize(11);
+    tableHeaders = [
+      "Employee Name",
+      "Role",
+      "Hours Worked",
+      "OverTime",
+      " Total Hours",
+      "Salary Employee",
+    ];
 
-const employeeStore = useEmployeeStore()
-const { employeeList } = storeToRefs(employeeStore)
-tableHeaders = ['Employee Name',  'Start Date', 'End Date', 'Req. Status', 'Description',]
-const getEmployeeName = (user_id : number) =>{
-      let employee = employeeList.value.find((employee: any) => employee.user_id == user_id)
-      return employee ? `${employee.first_name} ${employee.last_name}` : 'N/A'
-  }
-  /**
-   * 
-   */
-const timeoffRequestStore = useTimeoffRequestStore()
-        const { timeoffRequestList, loading : loadingTimeoffRequests } = storeToRefs(timeoffRequestStore)
-       tableData = timeoffRequestList.value.map((item) => {
-            return [ item.user_id ? getEmployeeName(item.user_id) : 'None',  item.start_date, item.end_date, `${item.status?.slice(0,1).toUpperCase()}${item.end_date, item.status?.slice(1)}`,item.description]
-        });
-
+    tableData = payPeriodAttendanceList.value.employees.map((attendance) => {
+      return [
+        `${attendance.first_name} ${attendance.last_name}`,
+        getEmployeePosition(attendance.id as number),
+        attendance.total_hours,
+        "None",
+        attendance.total_hours,
+        attendance.employment_type ? "Yes" : "No",
+      ];
+    });
     (doc.value as any).autoTable({
       startY: (currentY.value += 10), // Specify the Y position to start the table
       head: [tableHeaders],
       body: tableData,
-      columnStyles: {
-        4: { halign: "left", cellWidth: 60 },
-        0: { halign: "left", valign: "left" },
-        1: { halign: "center", valign: "middle" },
-        2: { halign: "center", valign: "middle" },
-        3: { halign: "center", valign: "middle" },
-      },
-      margin: { top: 10, bottom: 20 },
-      willDrawCell: function (data) {
-        const { doc, cell, column } = data;
-
-        // Check if the current column index is 2 (which is the 3rd column, 0-indexed)
-        if (column.index === 3) {
-          if (cell.raw === "Accepted") {
-            // Set text color to green for "Accepted"
-            doc.setTextColor(0, 128, 0);
-          } else if (cell.raw === "Rejected") {
-            // Set text color to red for "Rejected"
-            doc.setTextColor(255, 0, 0);
-          } else if (cell.raw === "Pending") {
-            // Set text color to orange for "Pending"
-            doc.setTextColor(255, 165, 0);
-          } else {
-            // Default text color for other values
-            doc.setTextColor(255, 255, 255);
-          }
-        }
-      },
     });
-
     currentY.value += fontSize;
     fontSize = 12;
 
     pdfDataUri.value = doc.value.output("datauristring");
+
+    // Open the PDF in a new tab
     const pdfWindow = window.open("", "_blank");
     if (pdfWindow) {
       pdfWindow.document.open();
@@ -225,35 +229,17 @@ defineExpose({ generateReport });
           <v-row>
             <v-col cols="4" class="overflow-y-scroll filled-height">
               <v-col class="px-0">
-                <v-btn color="primary" density="compact" @click="generateReport"
-                  >Generate Report</v-btn
-                >
+                <v-btn color="primary" density="compact" @click="generateReport">Generate Report</v-btn>
               </v-col>
             </v-col>
             <v-col cols="8" class="overflow-y-scroll filled-height pa-0">
-              <div
-                v-if="loading"
-                class="loading-overlay d-flex justify-center align-center"
-                style="height: 100%; width: 100%"
-              >
+              <div v-if="loading" class="loading-overlay d-flex justify-center align-center"
+                style="height: 100%; width: 100%">
                 <span>
-                  <v-progress-circular
-                    v-if="loading"
-                    indeterminate
-                    color="primary"
-                  ></v-progress-circular
-                ></span>
+                  <v-progress-circular v-if="loading" indeterminate color="primary"></v-progress-circular></span>
               </div>
-              <iframe
-                v-if="pdfDataUri"
-                id="pdfPreview"
-                :src="pdfDataUri"
-              ></iframe>
-              <div
-                v-else
-                class="d-flex justify-center align-center"
-                style="height: 100%; width: 100%"
-              ></div>
+              <iframe v-if="pdfDataUri" id="pdfPreview" :src="pdfDataUri"></iframe>
+              <div v-else class="d-flex justify-center align-center" style="height: 100%; width: 100%"></div>
             </v-col>
           </v-row>
         </v-card-text>

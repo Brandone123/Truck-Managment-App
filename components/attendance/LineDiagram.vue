@@ -87,7 +87,7 @@ const chartOptions = computed(() => {
         </div>
 
       </div>
-      <div >
+      <!-- <div >
         <client-only>
           <apexchart
             type="line"
@@ -97,7 +97,7 @@ const chartOptions = computed(() => {
           >
           </apexchart>
         </client-only>
-      </div>
+      </div> -->
     </v-card-item>
   </v-card>
 </template>

@@ -19,7 +19,7 @@
             <v-col cols="12" class="pb-0">
               <v-autocomplete v-model="employeeApproverInfo.approver_id" :items="leaveApproverList" variant="solo" flat
                 label="Name" density="compact" :rules="[rules.required]" item-title="full_name"
-                item-value="employee_id"></v-autocomplete>
+                item-value="user_id"></v-autocomplete>
             </v-col>
           </v-row>
         </v-form>

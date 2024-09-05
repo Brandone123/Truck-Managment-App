@@ -46,6 +46,9 @@ const { leaveApproverList } = storeToRefs(leaveApproverStore)
 const leavePolicyStore = useLeavePolicyStore()
 const { leavePolicyList } = storeToRefs(leavePolicyStore)
 
+const auth = useAuthStore()
+const { user } = storeToRefs(auth)
+
 
 /********************
  *MOUNTED HOOKS
@@ -96,7 +99,7 @@ const timeOffRequests = computed(() => {
     return employeeList.value.map((item: EmployeeInfo) => {
         return {
             employee_info: item,
-            timeoff_info: employeeTimeOffRequests(item.id as number)
+            timeoff_info: employeeTimeOffRequests(item.user_id as number)
         }
     })
 })
@@ -292,15 +295,13 @@ function customTableFilter(value: any, query: any, item: any) {
 function showEditTimeoff(timeoff_id: number) {
     let time_off = timeoffRequestList.value.find((item: TimeoffRequest) => item.id == timeoff_id)
     if (time_off) {
-
         //validate employeeInfo
-        const errorList = validateEmployeeProfile(time_off.employee_id)
+        const errorList = validateEmployeeProfile(time_off.user_id)
         if (errorList.length) {
             incompleteProfileMessageList.value = errorList
             showIncompleteTimeoffProfile.value = true
             return
         }
-
         editedAttendanceRecord.value = time_off
         updatingAttendanceRecord.value = true
         attendanceRecordDialog.value = true
@@ -321,11 +322,11 @@ function sortNonOverlappingDateRanges(dateRanges: Array<any>) {
     return dateRanges;
 }
 
-function employeeTimeOffRequests(employee_id: number) {
+function employeeTimeOffRequests(user_id: number) {
 
     let daysOfMonth = getDaysInMonth(currentDate.value.getFullYear(), currentDate.value.getMonth()).map(item => item.day);
 
-    let employee_days_off_in_month = sortNonOverlappingDateRanges(timeoffRequestList.value.filter((item: TimeoffRequest) => item.employee_id == employee_id)) || []
+    let employee_days_off_in_month = sortNonOverlappingDateRanges(timeoffRequestList.value.filter((item: TimeoffRequest) => item.user_id == user_id)) || []
 
     if (employee_days_off_in_month.length > 0) {
         // let result: (number | number[])[] = [];
@@ -382,7 +383,7 @@ function getLeavePolicy(leave_policy_id: number) {
 
 function addAttendance(monthDay: number, employee: EmployeeInfo) {
     //validate employeeInfo
-    const errorList = validateEmployeeProfile(employee.id)
+    const errorList = validateEmployeeProfile(employee.user_id)
     if (errorList.length) {
         incompleteProfileMessageList.value = errorList
         showIncompleteTimeoffProfile.value = true
@@ -400,7 +401,7 @@ function addAttendance(monthDay: number, employee: EmployeeInfo) {
     }
 
     //validate leave policy delay period
-    let requestValidFrom =  new Date()
+    let requestValidFrom = new Date()
     let min_notice_period = getLeavePolicy(employee.leave_policy_id as number)?.min_notice_period || 0
 
 
@@ -419,7 +420,7 @@ function addAttendance(monthDay: number, employee: EmployeeInfo) {
 
 
     selectedDate.value = date.toISOString().substring(0, 10)
-    selectedEmployee.value = employee.id as number
+    selectedEmployee.value = employee.user_id as number
     attendanceRecordDialog.value = true
 }
 
@@ -428,11 +429,14 @@ function closeTimeoffProfileErrorDialog(dialogValue: boolean) {
     showIncompleteTimeoffProfile.value = dialogValue
 }
 
-function validateEmployeeProfile(employeeId: number | null | undefined) {
+function validateEmployeeProfile(userId: number | null | undefined) {
     let response = []
-    if (employeeId) {
-        const employee = employeeList.value.find((item: EmployeeInfo) => item.id == employeeId)
-        if (employee && !leaveApproverList.value.some((item: LeaveApproverInfo) => item.id == employee.approver_id)) {
+    if (userId) {
+        const employee = employeeList.value.find((item: EmployeeInfo) => item.user_id == userId)
+        if (!(employee?.approver_id == user.value?.id) && !employeeList.value.find((employee: EmployeeInfo) => employee.user_id == user.value?.id)?.isAdmin) {
+                response.push('You cannot edit this request');
+            } 
+        if (employee && !leaveApproverList.value.some((item: LeaveApproverInfo) => item.user_id == employee.approver_id)) {
             response.push('No Valid Leave Approver Assigned for this employee')
         }
         if (employee && !leavePolicyList.value.some((item: LeavePolicyInfo) => item.id == employee.leave_policy_id)) {
@@ -448,8 +452,8 @@ function validateEmployeeProfile(employeeId: number | null | undefined) {
         <div class="d-flex justify-space-between mb-2">
             <span class="text-primary text-h5">TimeOff Request Management</span>
             <div>
-                <AttendanceAddTimeoffRequest :show="attendanceRecordDialog" @addInfo="addTimeoff" @editInfo="editTimeoff"
-                    @update:show="updateAttendanceRecord" :updating="updatingAttendanceRecord"
+                <AttendanceAddTimeoffRequest :show="attendanceRecordDialog" @addInfo="addTimeoff"
+                    @editInfo="editTimeoff" @update:show="updateAttendanceRecord" :updating="updatingAttendanceRecord"
                     :item="(editedAttendanceRecord as any)" :employees="employeeList"
                     :selectedEmployee="(selectedEmployee as any)" :selectedDate="(selectedDate as any)" />
             </div>
@@ -463,7 +467,8 @@ function validateEmployeeProfile(employeeId: number | null | undefined) {
                     <v-btn color="primary" density="compact" icon="mdi-chevron-left" variant="plain"
                         @click="previousMonth()"></v-btn>
                     <v-btn color="primary" icon="mdi-chevron-right" variant="plain" @click="nextMonth()"></v-btn>
-                    <AttendanceYearAndMonthSelector :currentDate="currentDate" @update:current-date="updateCurrentDate" />
+                    <AttendanceYearAndMonthSelector :currentDate="currentDate"
+                        @update:current-date="updateCurrentDate" />
                 </v-row>
             </v-col>
             <v-col cols="12" md="6">
@@ -483,8 +488,9 @@ function validateEmployeeProfile(employeeId: number | null | undefined) {
                             <th v-for="(header, i) in columns" :key="i" :class="[(header as any).class]"
                                 :style="{ width: header.width, }" class="px-0 text-center">
                                 <v-autocomplete class="mx-2" clearable hide-details v-model="current_department_id"
-                                    v-if="header.key == 'department'" item-value="id" item-title="name" label="Department"
-                                    density="compact" variant="outlined" flat :items="departmentList"></v-autocomplete>
+                                    v-if="header.key == 'department'" item-value="id" item-title="name"
+                                    label="Department" density="compact" variant="outlined" flat
+                                    :items="departmentList"></v-autocomplete>
                                 <template v-else>
                                     <span v-if="(header as any).isToday"
                                         class="pa-2 text-primary font-weight-bold text-decoration-underline">{{
@@ -497,7 +503,7 @@ function validateEmployeeProfile(employeeId: number | null | undefined) {
                         </tr>
                     </template>
                     <template v-slot:body="{ items }">
-                        <tr v-for="item in  items " :key="(item.employee_info.id as number)">
+                        <tr v-for="item in items " :key="(item.employee_info.id as number)">
                             <td class="fix px-0 text-primary ">
                                 <AttendanceEmployeeDetailsPopup :employee="item.employee_info"
                                     :timeoffInfo="item.timeoff_info" :daysInMonthCount="daysInMonthCount" />

@@ -35,8 +35,8 @@ const { leavePolicyList } = storeToRefs(leavePolicyStore)
 ********************/
 
 onMounted(() => {
-    if(auth.user?.employee?.id){
-        leavePolicyStore.getEmployeeLeaveStatus(auth.user.employee.id)
+    if(auth.user?.id){
+        leavePolicyStore.getEmployeeLeaveStatus(auth.user.id)
     }
 
     leavePolicyStore.fetchLeavePolicyList()

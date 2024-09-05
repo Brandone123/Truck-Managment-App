@@ -17,9 +17,9 @@
         <v-form ref="leaveApproverForm">
           <v-row class="my-4">
             <v-col cols="12" class="pb-0">
-              <v-autocomplete v-model="leaveApproverInfo.employee_id" :items="filteredEmployees" variant="solo" flat
+              <v-autocomplete v-model="leaveApproverInfo.user_id" :items="filteredEmployees" variant="solo" flat
                 label="Name" density="compact" :rules="[rules.required]" item-title="full_name"
-                item-value="id"></v-autocomplete>
+                item-value="user_id"></v-autocomplete>
             </v-col>
           </v-row>
         </v-form>
@@ -72,7 +72,7 @@ const dialog = computed({
 })
 
 const filteredEmployees = computed(() => {
-  return employeeList.value.filter((employee: EmployeeInfo) => !leaveApproverList.value.some((approver: any) => approver.employee_id == employee.id))
+  return employeeList.value.filter((employee: EmployeeInfo) => !leaveApproverList.value.some((approver: any) => approver.user_id == employee.user_id))
 })
 
 const leaveApproverForm = ref(null)

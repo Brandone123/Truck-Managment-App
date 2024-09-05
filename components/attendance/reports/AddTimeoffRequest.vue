@@ -1,7 +1,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, defineEmits, defineProps } from 'vue'
 import type { TimeoffRequest } from '~/types/attendance/timeoff_request';
 
 const emit = defineEmits(['update:show'])
@@ -31,9 +31,13 @@ const props = defineProps({
     }
 });
 
-
+const approverEmployee = computed(() => {
+  const employee = props.employeeList.find((item: any) => item.user_id == timeoffRequestInfo.value.user_id)
+  return employee ? employee.approver_id : null
+})
 const timeoffRequestInfo = ref<TimeoffRequest>({})
-
+const timeoffRequestStore = useTimeoffRequestStore()
+const { timeoffRequestList } = storeToRefs(timeoffRequestStore)
 const title = computed(() => {
     return props.updating ? 'Timeoff Request Info' : 'Request Timeoff'
 })
@@ -50,21 +54,20 @@ const dialog = computed({
         emit('update:show', newValue);
     }
 })
-
 const save = () => {
-    // if (props.updating) {
-    //     //updating timeoff request
-    //     leaveTypeStore.updateTimeoffRequest(timeoffRequestInfo)
-    // } else {
-    //     //adding timeoff request
-    //     timeoffRequestInfo.id = 5
-    //     leaveTypeStore.addTimeoffRequest(timeoffRequestInfo)
-    // }
-    dialog.value = false
+    if (props.updating) {
+        // Call update function if updating
+        timeoffRequestStore.updateTimeoffRequest(timeoffRequestInfo.value);
+    } else {
+        // Call create function if not updating
+        timeoffRequestStore.addTimeoffRequest({...timeoffRequestInfo.value, approver_id:approverEmployee.value});
+    }
+    dialog.value = false;
 }
 
 watch(dialog, (val) => {
     if (val && props.updating) {
+        
         timeoffRequestInfo.value = Object.assign({}, props.item as TimeoffRequest)
     } else {
         timeoffRequestInfo.value = {}
@@ -91,8 +94,8 @@ watch(dialog, (val) => {
                 <v-form ref="timeoffRequestForm">
                     <v-row>
                         <v-col cols="12" md="6" class="pb-0">
-                            <v-select v-model="timeoffRequestInfo.employee_id" variant="solo" flat label="Employee Name"
-                                :items='employeeList' item-title="full_name" item-value="id" density="compact"></v-select>
+                            <v-select v-model="timeoffRequestInfo.user_id" variant="solo" flat label="Employee Name"
+                                :items='employeeList' item-title="full_name" item-value="user_id" density="compact"></v-select>
                         </v-col>
                         <v-col cols="12" md="6" class="pb-0">
                             <v-select v-model="timeoffRequestInfo.attendance_leave_type_id" variant="solo" flat
@@ -115,7 +118,7 @@ watch(dialog, (val) => {
                             <v-text-field type="time" variant="solo" flat density="compact" label="End Time"
                                 v-model="timeoffRequestInfo.end_time" required></v-text-field>
                         </v-col>
-                        <v-col cols="12" class="pb-0" v-if="props.updating">
+                        <v-col cols="12" class="pb-0">
                             <v-select variant="solo" flat density="compact" label="Status"
                                 v-model="timeoffRequestInfo.status" :items="['pending', 'accepted', 'rejected']"></v-select>
                         </v-col>

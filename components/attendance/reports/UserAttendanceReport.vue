@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, defineExpose } from "vue";
+import { ref, defineExpose, defineProps } from "vue";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { useAttendanceStore } from "@/stores/attendance/attendance";
 import { storeToRefs } from "pinia";
+import moment from "moment";
 
 const currentY = ref(10);
 const currentX = ref(10);
@@ -15,8 +17,7 @@ const loading = ref(false);
 const pdfDataUri = ref("");
 const dialog = ref<boolean>(false);
 
-const selectedReportType = ref<string>("attendance_Report");
-
+const selectedReportType = ref<string>("User_attendance_Report");
 const getBase64ImageFromURL = (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -43,7 +44,7 @@ const getBase64ImageFromURL = (url: string): Promise<string> => {
 const generateReport = () => {
   loading.value = true;
   switch (selectedReportType.value) {
-    case "attendance_Report": // Employee Timeoff Request Report;
+    case "User_attendance_Report": // Employee Timeoff Request Report;
       getReport();
       break;
   }
@@ -55,11 +56,10 @@ const getReport = async () => {
     let tableHeaders: string[] = [];
     doc.value = new jsPDF();
     var fontSize = 12;
-    doc.value.setTextColor(20, 20, 20); // Setting text color to black
+    doc.value.setTextColor(5, 5, 5); // Setting text color to black
     var pageWidth = doc.value.internal.pageSize.getWidth();
-    doc.value.setFontSize(12);
-    // Function to add page number to the bottom of the page
-    const addPageNumber = (pdfDoc) => {
+
+    const addPageNumber = (pdfDoc: any) => {
       // Position for page number (bottom center)
       const x = pdfDoc.internal.pageSize.width - 20;
       const y = pdfDoc.internal.pageSize.height - 10; // 10 units from bottom
@@ -69,7 +69,6 @@ const getReport = async () => {
         align: "center",
       });
     };
-
     // Load the image as base64
     const company_logo = await getBase64ImageFromURL(
       "/images/users/company.webp"
@@ -116,73 +115,88 @@ const getReport = async () => {
     });
 
     doc.value.setFontSize(18);
-
+    const attendanceStore = useAttendanceStore();
+    const { payPeriodAttendanceList, employeeWorkHours } =
+      storeToRefs(attendanceStore);
     (currentY.value += 35),
-      doc.value.text(
-        `Employee Timeoff Report `,
-        pageWidth / 3,
-        currentY.value,
-        {
-          align: "left",
-        }
-      );
+      doc.value.text(`Attendance Report for, `, pageWidth / 3, currentY.value, {
+        align: "center",
+      });
+    doc.value.text(
+      `${moment(payPeriodAttendanceList.value.pay_period.start_date)
+        .format("MMM D YYYY")
+        .toString()
+        .slice(0, 20)} - ${moment(
+        payPeriodAttendanceList.value.pay_period.end_date
+      )
+        .format("MMM D YYYY")
+        .toString()
+        .slice(0, 20)}`,
+      pageWidth - 72,
+      currentY.value,
+      {
+        align: "center",
+      }
+    );
+    doc.value.setFontSize(14);
+    doc.value.text(
+      `Employee : ${employeeWorkHours.value.employee?.first_name} ${employeeWorkHours.value.employee?.last_name}`,
+      pageWidth - 100,
+      currentY.value + 10,
+      {
+        align: "center",
+      }
+    );
 
     doc.value.setFontSize(11);
 
-const employeeStore = useEmployeeStore()
-const { employeeList } = storeToRefs(employeeStore)
-tableHeaders = ['Employee Name',  'Start Date', 'End Date', 'Req. Status', 'Description',]
-const getEmployeeName = (user_id : number) =>{
-      let employee = employeeList.value.find((employee: any) => employee.user_id == user_id)
-      return employee ? `${employee.first_name} ${employee.last_name}` : 'N/A'
-  }
-  /**
-   * 
-   */
-const timeoffRequestStore = useTimeoffRequestStore()
-        const { timeoffRequestList, loading : loadingTimeoffRequests } = storeToRefs(timeoffRequestStore)
-       tableData = timeoffRequestList.value.map((item) => {
-            return [ item.user_id ? getEmployeeName(item.user_id) : 'None',  item.start_date, item.end_date, `${item.status?.slice(0,1).toUpperCase()}${item.end_date, item.status?.slice(1)}`,item.description]
-        });
+    tableHeaders = [
+      "Date",
+      "ClockIn",
+      "ClockOut",
+      "ClockInLoc",
+      " ClockOutLoc",
+      " OvertimeHours",
+      "TotalHours",
+    ];
+
+    tableData = employeeWorkHours.value.work_hours.map((attendance: any) => {
+      return [
+        attendance.clock_in
+          ? attendance.clock_in.toString().slice(0, 10)
+          : attendance.clock_in_time
+          ? attendance.clock_in_time.toString().slice(0, 10)
+          : "",
+        attendance.clock_in
+          ? attendance.clock_in.toString().slice(11)
+          : attendance.clock_in_time
+          ? attendance.clock_in_time.toString().slice(11)
+          : "",
+        attendance.clock_out
+          ? attendance.clock_out.toString().slice(11)
+          : attendance.clock_out_time
+          ? attendance.clock_out_time.toString().slice(11)
+          : "",
+        "None",
+        "none",
+        parseInt(attendance.total_hours) > 40 ? parseInt(attendance.total_hours) - 40 : attendance.hours_worked > 40 ? parseInt(attendance.hours_worked ) - 40 : 0 ,
+        attendance.total_hours ? attendance.total_hours : attendance.hours_worked ? attendance.hours_worked : 0 ,
+      ];
+    });
 
     (doc.value as any).autoTable({
-      startY: (currentY.value += 10), // Specify the Y position to start the table
+      startY: (currentY.value += 20), // Specify the Y position to start the table
       head: [tableHeaders],
       body: tableData,
-      columnStyles: {
-        4: { halign: "left", cellWidth: 60 },
-        0: { halign: "left", valign: "left" },
-        1: { halign: "center", valign: "middle" },
-        2: { halign: "center", valign: "middle" },
-        3: { halign: "center", valign: "middle" },
-      },
-      margin: { top: 10, bottom: 20 },
-      willDrawCell: function (data) {
-        const { doc, cell, column } = data;
-
-        // Check if the current column index is 2 (which is the 3rd column, 0-indexed)
-        if (column.index === 3) {
-          if (cell.raw === "Accepted") {
-            // Set text color to green for "Accepted"
-            doc.setTextColor(0, 128, 0);
-          } else if (cell.raw === "Rejected") {
-            // Set text color to red for "Rejected"
-            doc.setTextColor(255, 0, 0);
-          } else if (cell.raw === "Pending") {
-            // Set text color to orange for "Pending"
-            doc.setTextColor(255, 165, 0);
-          } else {
-            // Default text color for other values
-            doc.setTextColor(255, 255, 255);
-          }
-        }
-      },
     });
 
     currentY.value += fontSize;
+    // addPageIfNeeded(50);
     fontSize = 12;
 
     pdfDataUri.value = doc.value.output("datauristring");
+
+    // Open the PDF in a new tab
     const pdfWindow = window.open("", "_blank");
     if (pdfWindow) {
       pdfWindow.document.open();
