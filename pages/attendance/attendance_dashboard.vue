@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import type { DriverInfo } from '@/types/store/driver'
-import type { EmployeeInfo } from '@/types/store/employee'
-import { Doughnut } from 'vue-chartjs';
-import LineDiagram from '@/components/attendance/LineDiagram.vue';
-import AttendanceStat from '@/components/attendance/AttendanceStat.vue';
+
 import EmployeeBar from '@/components/attendance/EmployeeAttendanceStat.vue';
 import LeaveTypeDistrStat from '@/components/attendance/LeaveTypeDistrStat.vue';
 // @ts-ignore
@@ -15,13 +11,13 @@ const headers = ref([
   { title: "Employee Name", key: "full_name", sortable: true },
   { title: "Email", key: "email", sortable: true },
   { title: "Department", key: "department.name", sortable: false },
-  { title: "Cell Phone", key: "cell_phone", sortable: false },
-  { title: "Address 1", key: "address1", sortable: false },
+  { title: "Contact", key: "cell_phone", sortable: false },
+  { title: "Address", key: "address1", sortable: false },
   { title: "Status", key: "status", sortable: false, align: 'center' },
   { title: "City", key: "city", sortable: false },
-  { title: "Approver Id", key: "leave_approver.first_name", sortable: false },
-  { title: "Policy Id", key: "policy_id", sortable: false },
-  { title: "Role ID", key: "role_id", sortable: false },
+  { title: "Approver", key: "approver_id", sortable: false },
+  { title: "Policy", key: "policy_id", sortable: false },
+  { title: "Role", key: "role_id", sortable: false },
   { title: "Hire Date", key: "hire_date", sortable: true },
   { title: "Termination Date", key: "termination_date", sortable: true },
  
@@ -50,7 +46,12 @@ onMounted(() => {
   employeeListStore.fetchEmployeeList();
   timeoffRequestStore.loadTimeoffRequests();
 });
-
+watch(
+  () => employeeList.value,
+  (newVal) => {
+    console.log("=== value of the system", newVal);
+  }
+);
 const employeeTimeOffRejected = computed(() => {
   return timeoffRequestList.value.filter((item) => item.status === "rejected").length;
 })
@@ -89,11 +90,11 @@ function sortNonOverlappingDateRanges(dateRanges: Array<any>) {
 const numberOfAbsences = computed(() => {
   let daysOfMonth = getDaysInMonth(currentDate.value.getFullYear(),currentDate.value.getMonth()).map((item) => item.day);
   let employee_days_off_in_month = sortNonOverlappingDateRanges(timeoffRequestList.value.filter((employee) => {
-      return employeeList.value.some((item) => item.id  === employee.employee_id) 
+      return employeeList.value.some((item) => item.id  === employee.user_id) 
     })) || [];
 
     const employeeChartData = employeeList.value.map((employee) => {
-      const employeeDaysOff = employee_days_off_in_month.filter((item) => item.employee_id === employee.id);
+      const employeeDaysOff = employee_days_off_in_month.filter((item) => item.user_id === employee.id);
 
       const daysOff = employeeDaysOff.reduce((totalDaysOff, item) => {
         const startDate = new Date(item.start_date).getTime();
@@ -212,10 +213,15 @@ const numberOfAbsences = computed(() => {
           Employee Attendance Detail 
         </v-card-title>
         <v-card-text>
-          <v-data-table :loading="loading && !totalEmployee" density="compact" :headers="(headers as any)" :items="employeeList.slice(0, 5)">
-            <template v-slot:item.status="{ value }">
-              <v-chip :color="value === 'On Leave' ? 'red' : 'primary'">{{ value }}</v-chip>
+          <v-data-table :loading="loading && !totalEmployee" density="compact" :headers="(headers as any)" :items="employeeList">
+            <template v-slot:item.status="{ item }">
+              <v-chip :color="item.status === 'On Leave' ? 'red' : 'primary'">{{ item.user.designation }}</v-chip>
             </template>
+            <template v-slot:item.approver_id="{ item }">
+              <SharedTableTechnicianItem
+            v-if="item.user.id"
+            :userId="item.user.id"
+          />            </template>
           </v-data-table>
         </v-card-text>
       </v-card>

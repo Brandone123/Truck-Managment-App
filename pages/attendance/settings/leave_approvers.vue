@@ -7,7 +7,8 @@ import { useLeaveApproverStore } from '@/stores/settings/attendance/leave_approv
 // const emit = defineEmits(['editItem'])
 
 const leaveApproverStore = useLeaveApproverStore()
-const { leaveApproverList } = storeToRefs(leaveApproverStore)
+const { leaveApproverList, loadingApprover } = storeToRefs(leaveApproverStore)
+const layoutStore = useLayoutStore()
 
 const employeeStore = useEmployeeStore()
 
@@ -36,9 +37,13 @@ const editLeaveApprover = (leave_type: LeaveApproverInfo) => {
     leaveApproverDialog.value = true
 }
 
-const deleteLeaveApprover = (leave_type_id: number) => {
-    leaveApproverStore.deleteLeaveApprover(leave_type_id)
-}
+const deleteLeaveApprover = async (leave_type_id: number) => {
+  const { confirm, cancel } = await layoutStore.showConfirmDialog("Proceed to delete this approver ?")
+
+  if (confirm) {
+    await leaveApproverStore.deleteLeaveApprover(leave_type_id);
+  }
+};
 
 const updateleaveApproverDialog = (value: boolean) => {
     leaveApproverDialog.value = value
@@ -52,7 +57,7 @@ const updateleaveApproverDialog = (value: boolean) => {
             :updating="updatingLeaveApprover" :item="editedLeaveApprover" />
     </div>
     <div>
-        <SharedUiCustomTable return-object :headers="leaveApproverHeaders" :items="leaveApproverList">
+        <SharedUiCustomTable return-object :show-footer-in-head="false" :headers="leaveApproverHeaders" :loading="loadingApprover" :items="leaveApproverList">
 
             <!-- <template v-slot:item.id="{ item }">
             <v-btn color="primary" variant="text" @click="editLoad(item)">{{ item.id }}</v-btn>

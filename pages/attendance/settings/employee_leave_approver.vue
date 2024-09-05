@@ -33,7 +33,7 @@ const employeeLeaveApproverHeaders = ref([
 
 const fixedEmployeeList = computed(() =>{
     return employeeList.value.map((employee: EmployeeInfo) =>{
-        let approver = employeeList.value.find((item: EmployeeInfo) => item.id == employee.approver_id)
+        let approver = employeeList.value.find((item: EmployeeInfo) => item.user_id == employee.approver_id)
         return {
             ...employee,
             approver
@@ -68,7 +68,7 @@ const updateleaveApproverDialog = (value: boolean) => {
             :updating="updatingEmployeeLeaveApprover" :item="editedEmployeeLeaveApprover" />
     </div>
     <div>
-        <SharedUiCustomTable return-object :headers="employeeLeaveApproverHeaders" :items="fixedEmployeeList">
+        <SharedUiCustomTable return-object :show-footer-in-head="false" :headers="employeeLeaveApproverHeaders" :items="fixedEmployeeList">
 
             <!-- Slot to capture bulk actions -->
             <template v-slot:bulkActions="{ selectedItems }" class="mr-2">

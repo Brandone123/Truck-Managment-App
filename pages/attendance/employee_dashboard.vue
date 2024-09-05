@@ -37,9 +37,9 @@ const loading = computed(()=>{
     return EmployeeLoading.value || TimeOffLoading.value || EmployeeTimeOffLoading.value
 })
 
-const employeeTimeOffPending = employeeTimeoffRequestList.value.filter((item) => item.status === "pending" && item.employee_id === user.value?.id).length;
-const employeeTimeOffRejected = employeeTimeoffRequestList.value.filter((item) => item.status === "rejected" && item.employee_id === user.value?.id).length;
-const employeeTimeOffRequest = employeeTimeoffRequestList.value.filter((item) => item.employee_id === user.value?.id).length;
+const employeeTimeOffPending = employeeTimeoffRequestList.value.filter((item) => item.status === "pending" && item.user_id === user.value?.id).length;
+const employeeTimeOffRejected = employeeTimeoffRequestList.value.filter((item) => item.status === "rejected" && item.user_id === user.value?.id).length;
+const employeeTimeOffRequest = employeeTimeoffRequestList.value.filter((item) => item.user_id === user.value?.id).length;
 
 function getDaysInMonth(year: number, month: number): DayOfWeek[] {
     const daysInMonth: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -67,7 +67,7 @@ function sortNonOverlappingDateRanges(dateRanges: Array<any>) {
 const numberOfAbsences = computed(() => {
   let daysOfMonth = getDaysInMonth(currentDate.value.getFullYear(),currentDate.value.getMonth()).map((item) => item.day);
   let employee_days_off_in_month = sortNonOverlappingDateRanges(timeoffRequestList.value.filter((employee) => {
-      return employeeList.value.some((item) => item.id  === employee.employee_id) 
+      return employeeList.value.some((item) => item.id  === employee.user_id) 
     })) || [];
 
     const loggedInEmployee = employeeList.value.find((employee) => {
@@ -78,7 +78,7 @@ const numberOfAbsences = computed(() => {
       return 0;
     }
 
-    const employeeDaysOff = employee_days_off_in_month.filter((item) => item.employee_id === loggedInEmployee.id);
+    const employeeDaysOff = employee_days_off_in_month.filter((item) => item.user_id === loggedInEmployee.id);
 
     console.log(employeeDaysOff)
 

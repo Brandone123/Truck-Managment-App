@@ -7,7 +7,8 @@ import  { useLeaveTypeStore } from '@/stores/settings/attendance/leave_type'
 // const emit = defineEmits(['editItem'])
 
 const leaveTypeStore = useLeaveTypeStore()
-const { leaveTypeList } = storeToRefs(leaveTypeStore)
+const { leaveTypeList, loading } = storeToRefs(leaveTypeStore)
+const layoutStore = useLayoutStore()
 
 onMounted(() => {
     leaveTypeStore.fetchLeaveTypeList();
@@ -34,9 +35,13 @@ const editLeaveType= (leave_type: LeaveTypeInfo) => {
     leaveTypeDialog.value = true
 }
 
-const deleteLeaveType= (leave_type_id: number) => {
-    leaveTypeStore.deleteLeaveType(leave_type_id)
-}
+const deleteLeaveType = async (leave_type_id: number) => {
+  const { confirm, cancel } = await layoutStore.showConfirmDialog("Proceed to delete this type ?")
+
+  if (confirm) {
+    await  leaveTypeStore.deleteLeaveType(leave_type_id);
+  }
+};
 
 const updateleaveTypeDialog = (value: boolean) => {
     leaveTypeDialog.value = value
@@ -50,7 +55,7 @@ const updateleaveTypeDialog = (value: boolean) => {
                     :updating="updatingLeaveType" :item="editedLeaveType" />
     </div>
     <div>
-    <SharedUiCustomTable return-object :headers="timeoffHeaders" :items="leaveTypeList">
+    <SharedUiCustomTable return-object :show-footer-in-head="false" :headers="timeoffHeaders" :loading="loading" :items="leaveTypeList">
 
         <!-- <template v-slot:item.id="{ item }">
             <v-btn color="primary" variant="text" @click="editLoad(item)">{{ item.id }}</v-btn>

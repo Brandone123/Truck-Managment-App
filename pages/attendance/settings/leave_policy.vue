@@ -7,7 +7,7 @@ import { useLeavePolicyStore } from '@/stores/settings/attendance/leave_policy'
 // const emit = defineEmits(['editItem'])
 
 const leavePolicyStore = useLeavePolicyStore()
-const { leavePolicyList } = storeToRefs(leavePolicyStore)
+const { leavePolicyList, loading } = storeToRefs(leavePolicyStore)
 
 onMounted(() => {
     leavePolicyStore.fetchLeavePolicyList();
@@ -25,20 +25,25 @@ const leavePolicyHeaders = ref([
 const editedLeavePolicy = ref<LeavePolicyInfo>({})
 const updatingLeavePolicy = ref(false)
 const leavePolicyDialog = ref(false)
+const layoutStore = useLayoutStore()
 
 const print = (selectedItems: any) => {
     console.log(selectedItems)
 }
 
-const editLeavePolicy = (leave_type: LeavePolicyInfo) => {
-    editedLeavePolicy.value = Object.assign({}, leave_type)
+const editLeavePolicy = (leave_policy: LeavePolicyInfo) => {
+    editedLeavePolicy.value = Object.assign({}, leave_policy)
     updatingLeavePolicy.value = true
     leavePolicyDialog.value = true
 }
 
-const deleteLeavePolicy = (leave_type_id: number) => {
-    leavePolicyStore.deleteLeavePolicy(leave_type_id)
-}
+const deleteLeavePolicy = async (leave_policy_id: number) => {
+  const { confirm, cancel } = await layoutStore.showConfirmDialog("Proceed to delete this policy ?")
+
+  if (confirm) {
+    await  leavePolicyStore.deleteLeavePolicy(leave_policy_id);
+  }
+};
 
 const updateleavePolicyDialog = (value: boolean) => {
     leavePolicyDialog.value = value
@@ -52,7 +57,7 @@ const updateleavePolicyDialog = (value: boolean) => {
             :updating="updatingLeavePolicy" :item="editedLeavePolicy" />
     </div>
     <div>
-        <SharedUiCustomTable return-object :headers="leavePolicyHeaders" :items="leavePolicyList">
+        <SharedUiCustomTable return-object :show-footer-in-head="false" :headers="leavePolicyHeaders" :loading="loading" :items="leavePolicyList">
 
             <!-- <template v-slot:item.id="{ item }">
             <v-btn color="primary" variant="text" @click="editLoad(item)">{{ item.id }}</v-btn>
