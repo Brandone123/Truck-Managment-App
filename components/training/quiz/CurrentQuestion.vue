@@ -1,65 +1,71 @@
+<!-- src/components/training/quiz/CurrentQuestion.vue -->
+
 <template>
-  <div>
-    <ol type="A">
-      <li v-for="(currentQuestion, i) in questionList" :key="i">
-        <div class="question-text" v-html="currentQuestion.text"></div>
-        <div class="question-media" v-if="currentQuestion.mediaUrl">
-          <img :src="currentQuestion.mediaUrl" :alt="`Question media`" class="media-image">
-        </div>
-        <v-radio-group v-model="selectedOption">
-          <v-radio v-for="(option, j) in currentQuestion.answerOptions" :key="j" :label="option.text"
-            :value="option.id"></v-radio>
-        </v-radio-group>
-      </li>
-    </ol>
-
-  </div>
-
-  <!-- </v-card-text>
-    </v-card> -->
+  <v-card outlined class="mb-4">
+    <v-card-title>
+      <span>Question {{ currentIndex + 1 }} of {{ totalQuestions }}</span>
+    </v-card-title>
+    <v-card-text>
+      <div class="question-text" v-html="question.questionText"></div>
+      <div class="question-media" v-if="question.mediaUrl">
+        <img :src="question.mediaUrl" alt="Question media" class="media-image">
+      </div>
+      <AnswerOptions 
+        v-model:selectedOption="selectedOption"
+        :options="question.options" 
+        :mode="mode"
+        :correctOptionIndex="question.correctOptionIndex"
+      />
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { defineProps, defineEmits, ref, watch, onMounted } from 'vue';
+import AnswerOptions from '@/components/training/quiz/AnswerOptions.vue';
 
-
-interface AnswerOption {
+interface QuizQuestion {
   id: number;
-  text: string;
-}
-
-interface Question {
-  id: number;
-  text: string;
+  questionText: string;
   mediaUrl?: string;
-  answerOptions: AnswerOption[];
-  correctAnswer: AnswerOption
+  options: string[];
+  correctOptionIndex: number;
 }
 
-// Sample data for the current question
-const questionList = ref<Question[]>([
-  {
-    id: 1,
-    text: 'What is the primary function of XYZ component in the ABC system?',
-    mediaUrl: 'https://example.com/media/xyz-component.png',
-    answerOptions: [
-      { id: 1, text: 'Option A' },
-      { id: 2, text: 'Option B' },
-      { id: 3, text: 'Option C' },
-      { id: 4, text: 'Option D' },
-    ],
-    correctAnswer: { id: 1, text: 'Option A' },
-  }
-]);
+const props = defineProps<{
+  question: QuizQuestion;
+  currentIndex: number;
+  totalQuestions: number;
+  mode: 'take' | 'preview';
+}>();
 
+const emit = defineEmits(['answer-selected']);
+
+/**
+ * Reactive reference to hold the currently selected option.
+ * Initialized to null and updated based on user interaction or preview mode.
+ */
 const selectedOption = ref<number | null>(null);
 
-const submitAnswer = () => {
-  console.log('Submitted answer ID:', selectedOption.value);
-  // Here you might emit an event or make an API call to record the answer
-  // For example, this.$emit('answer-submitted', selectedOption.value);
-};
+/**
+ * Initializes the selectedOption based on the mode.
+ * In 'preview' mode, it automatically selects the correct option.
+ */
+onMounted(() => {
+  if (props.mode === 'preview') {
+    selectedOption.value = props.question.correctOptionIndex;
+  }
+});
 
+/**
+ * Watches for changes in selectedOption.
+ * Emits an event when a new option is selected in 'take' mode.
+ */
+watch(selectedOption, (newVal) => {
+  if (props.mode === 'take' && newVal !== null) {
+    emit('answer-selected', props.question.id, newVal);
+  }
+});
 </script>
 
 <style scoped>
@@ -71,6 +77,4 @@ const submitAnswer = () => {
   max-width: 100%;
   height: auto;
 }
-
-
 </style>

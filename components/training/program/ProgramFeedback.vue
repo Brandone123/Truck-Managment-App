@@ -1,6 +1,5 @@
-<!-- src/components/training/moduleDetails/ModuleFeedback.vue -->
 <template>
-  <v-card flat>
+  <div>
     <div class="d-flex flex-wrap justify-center">
       <span class="v-card-title px-0 font-weight-bold text-primary">Feedback</span>
     </div>
@@ -18,43 +17,32 @@
 
     <v-divider class="my-4"></v-divider>
 
+    <!-- <p class="text-primary text-subtitle" >Leave Your Feedback</p> -->
     <v-form @submit.prevent="submitFeedback">
-      <v-textarea
-        v-model="newFeedback.comment"
-        variant="solo"
-        flat
-        label="Your feedback"
-        rows="3"
-        auto-grow
-        clearable
-        :rules="feedbackRules"
-      ></v-textarea>
+      <v-textarea v-model="newFeedback.comment" variant="solo" flat label="Your feedback" rows="3" auto-grow clearable
+        :rules="feedbackRules"></v-textarea>
       <div class="d-flex justify-center">
         <v-btn type="submit" color="primary" density="compact" class="text-none">Submit</v-btn>
       </div>
     </v-form>
-  </v-card>
+
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useTrainingModuleStore } from '@/stores/training/trainingModuleStore';
+import { ref } from 'vue';
 
 interface FeedbackEntry {
   author: string;
   comment: string;
 }
 
-// Dummy feedback list
+// Sample feedback list
 const feedbackList = ref<FeedbackEntry[]>([
-  {
-    author: 'Student A',
-    comment: 'This module really clarified my understanding of the topic.',
-  },
-  {
-    author: 'Student B',
-    comment: 'I would appreciate more examples in the next module.',
-  },
+  // Sample feedbacks
+  { author: 'John Doe', comment: 'Very informative and well-structured program.' },
+  { author: 'Jane Smith', comment: 'Helpful course content and practical examples.' },
+  // ... more feedbacks
 ]);
 
 // New feedback input
@@ -70,13 +58,13 @@ const feedbackRules = [
 ];
 
 // Submit new feedback
-function submitFeedback() {
+const submitFeedback = () => {
   if (newFeedback.value.comment) {
     feedbackList.value.push({ ...newFeedback.value });
     newFeedback.value.comment = ''; // Clear the input field
     // In a real application, you'd also make an API call to submit the feedback to the server
   }
-}
+};
 </script>
 
 <style scoped>

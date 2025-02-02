@@ -1,56 +1,82 @@
+<!-- src/components/training/quiz/QuizTimer.vue -->
+
 <template>
-    <!-- <v-card outlined  flat>
-      <v-card-title>Time Remaining</v-card-title>
-      <v-card-text> -->
-        <v-progress-circular
-          :model-value="100 - progress"
-          :size="100"
-          :width="10"
-          color="primary"
-        
-        >
-      
-        <template v-slot:default="{ value }">
-          <strong class="text-center">Time Left <br> {{ timeLeftFormatted }}</strong>
-        </template>
+  <v-card flat>
+    <v-card-title class="d-flex align-center">
+      <v-progress-circular
+        :value="progress"
+        :size="80"
+        :width="5"
+        color="primary"
+        rotate="-90"
+      >
+        <strong class="text-center">{{ timeLeftFormatted }}</strong>
       </v-progress-circular>
-      <!-- </v-card-text>
-    </v-card> -->
-  </template>
-  
-  <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue';
-  
-  const totalSeconds = 300; // Example: 5 minutes for the quiz
-  const timeLeft = ref(totalSeconds);
-  const progress = ref(100);
-  
-  // Formats the time left into a mm:ss string
-  const timeLeftFormatted = computed(() => {
-    const minutes = Math.floor(timeLeft.value / 60);
-    const seconds = timeLeft.value % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  });
-  
-  // Updates the timer every second
-  const interval = setInterval(() => {
+      <span class="ml-4">Time Remaining</span>
+    </v-card-title>
+  </v-card>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+
+const props = defineProps<{
+  timeLimit: number; // in seconds
+}>();
+
+const emit = defineEmits(['time-up']);
+
+const timeLeft = ref(props.timeLimit);
+const progress = ref(100);
+
+const timeLeftFormatted = computed(() => {
+  const minutes = Math.floor(timeLeft.value / 60);
+  const seconds = timeLeft.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
+
+let interval: number;
+
+onMounted(() => {
+  interval = window.setInterval(() => {
     if (timeLeft.value > 0) {
       timeLeft.value--;
-      progress.value = (timeLeft.value / totalSeconds) * 100;
+      progress.value = (timeLeft.value / props.timeLimit) * 100;
     } else {
       clearInterval(interval);
-      // Here you might emit an event indicating the time is up
-      // For example, this.$emit('time-up');
+      emit('time-up');
     }
   }, 1000);
-  
-  onMounted(() => {
-    // Initialize the timer or any required setup on mount
-  });
-  
-  onUnmounted(() => {
-    // Clean up the interval when the component is unmounted
-    clearInterval(interval);
-  });
-  </script>
-  
+});
+
+onUnmounted(() => {
+  clearInterval(interval);
+});
+
+watch(() => props.timeLimit, (newLimit) => {
+  timeLeft.value = newLimit;
+  progress.value = 100;
+  clearInterval(interval);
+  interval = window.setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+      progress.value = (timeLeft.value / props.timeLimit) * 100;
+    } else {
+      clearInterval(interval);
+      emit('time-up');
+    }
+  }, 1000);
+});
+</script>
+
+<style scoped>
+.d-flex {
+  display: flex;
+}
+.align-center {
+  align-items: center;
+}
+.ml-4 {
+  margin-left: 16px;
+}
+</style>

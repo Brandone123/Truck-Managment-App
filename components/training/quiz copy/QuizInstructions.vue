@@ -1,15 +1,13 @@
-<!-- src/components/training/quiz/QuizInstructions.vue -->
-
 <template>
-  <v-card outlined class="mb-4">
+  <v-card class="mb-4">
     <v-card-title class="d-flex justify-space-between align-center">
-      <span>{{ instructions.title }}</span>
+      <span>Quiz Instructions</span>
       <v-btn icon flat density="compact" @click="toggleInstructions">
         <v-icon>{{ showInstructions ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
       </v-btn>
     </v-card-title>
-    <v-card-text v-if="alert" :class="{ 'pb-0': showInstructions }">
-      <v-alert type="info" density="compact" color="primary" dismissible>
+    <v-card-text v-if="alert" :class="{'pb-0':showInstructions}">
+      <v-alert v-model="alert" type="info" density="compact" color="primary" closable>
         Please read all instructions carefully before beginning the quiz.
       </v-alert>
     </v-card-text>
@@ -21,6 +19,7 @@
         </ul>
       </v-card-text>
     </v-expand-transition>
+
   </v-card>
 </template>
 
@@ -32,18 +31,22 @@ interface Instructions {
   details: string[];
 }
 
-const props = defineProps<{
-  instructions: Instructions;
-}>();
+// Sample instructions for the quiz
+const instructions = ref<Instructions>({
+  title: 'General Instructions for the Quiz:',
+  details: [
+    'The quiz consists of 10 multiple-choice questions.',
+    'You have 20 minutes to complete the quiz.',
+    'Each question carries one mark; there is no negative marking for wrong answers.',
+    'Passing score is 70%.',
+    'Click "Submit" after answering all questions to see your score.',
+  ],
+});
 
 const showInstructions = ref(false);
-const alert = ref(true);
+const alert = ref(true)
 
 const toggleInstructions = () => {
   showInstructions.value = !showInstructions.value;
 };
 </script>
-
-<style scoped>
-/* Add styles as needed */
-</style>

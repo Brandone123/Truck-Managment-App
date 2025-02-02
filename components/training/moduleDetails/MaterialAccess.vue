@@ -1,50 +1,49 @@
+<!-- src/components/training/moduleDetails/MaterialAccess.vue -->
 <template>
   <v-card flat>
     <v-card-title>Additional Materials</v-card-title>
-      <v-list dense>
-        <v-list-item v-for="material in materials" :key="material.id" @click="openMaterial(material.link)">
+    <v-list dense>
+      <v-list-item
+        v-for="material in materials"
+        :key="material.id"
+        @click="openMaterial(material)"
+        style="cursor: pointer;"
+      >
+        <v-list-item-action>
+          <v-icon>mdi-open-in-new</v-icon>
+        </v-list-item-action>
+        <v-list-item-content>
           <v-list-item-title>{{ material.title }}</v-list-item-title>
           <v-list-item-subtitle>{{ material.description }}</v-list-item-subtitle>
-          <template v-slot:prepend>
-            <v-icon>
-              mdi-open-in-new
-            </v-icon>
-          </template>
-        </v-list-item>
-      </v-list>
+        </v-list-item-content>
+      </v-list-item>
+    </v-list>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { useTrainingModuleStore } from '@/stores/training/trainingModuleStore';
+import type { ModuleMaterial } from '@/types/training/trainingModule';
 
-interface Material {
-  id: number;
-  title: string;
-  description: string;
-  link: string;
-  type: string; // Could be 'video', 'article', 'pdf', etc.
-}
+const props = defineProps<{
+  moduleId: number;
+}>();
 
-const materials = ref<Material[]>([
-  {
-    id: 1,
-    title: 'Safety Protocols Video',
-    description: 'A comprehensive video on safety protocols.',
-    link: 'https://example.com/video',
-    type: 'video',
-  },
-  {
-    id: 2,
-    title: 'Operational Excellence PDF',
-    description: 'Detailed PDF on operational excellence.',
-    link: 'https://example.com/operational-excellence.pdf',
-    type: 'pdf',
-  },
-  // ... more materials
-]);
+const store = useTrainingModuleStore();
 
-function openMaterial(link: string) {
-  window.open(link, '_blank');
+// Get the module
+const module = computed(() => store.getModuleById(props.moduleId));
+
+// Get materials
+const materials = computed(() => module.value?.materials || []);
+
+// Open material in a new tab
+function openMaterial(material: ModuleMaterial) {
+  window.open(material.link, '_blank');
 }
 </script>
+
+<style scoped>
+/* Optional: Add hover effects or other styles */
+</style>

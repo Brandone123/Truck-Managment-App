@@ -1,43 +1,65 @@
+<!-- src/components/training/quiz/AnswerOptions.vue -->
+
 <template>
-    <v-card flat>
-      <v-card-title>Answer Options</v-card-title>
-      <v-card-text>
-        <v-radio-group v-model="selectedOption">
-          <v-radio
-            v-for="option in options"
-            :key="option.id"
-            :label="option.text"
-            :value="option.id"
-          ></v-radio>
-        </v-radio-group>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn color="primary" @click="submitAnswer">Submit Answer</v-btn>
-      </v-card-actions>
-    </v-card>
-  </template>
-  
-  <script setup lang="ts">
-  import { ref } from 'vue';
-  
-  interface AnswerOption {
-    id: number;
-    text: string;
+  <v-card flat>
+    <v-radio-group
+      :model-value="selectedOption"
+      @update:model-value="onOptionSelected"
+      :disabled="isPreviewMode"
+    >
+      <v-radio
+        v-for="(option, index) in options"
+        :key="index"
+        :label="option"
+        :value="index"
+      >
+        <template #label>
+          <div :class="{ 'correct-answer': isPreviewMode && index === correctOptionIndex }">
+            {{ option }}
+            <span
+              v-if="isPreviewMode && index === correctOptionIndex"
+              class="ml-2"
+              title="Correct Answer"
+            >
+              <v-icon small color="green">mdi-check-circle</v-icon>
+            </span>
+          </div>
+        </template>
+      </v-radio>
+    </v-radio-group>
+  </v-card>
+</template>
+
+<script setup lang="ts">
+import { defineProps, defineEmits, computed } from 'vue';
+
+const props = defineProps<{
+  options: string[];
+  selectedOption: number | null;
+  mode: 'take' | 'preview';
+  correctOptionIndex: number;
+}>();
+
+const emit = defineEmits(['update:selectedOption']);
+
+const isPreviewMode = computed(() => props.mode === 'preview');
+
+/**
+ * Handles the selection of an option.
+ * Emits an update event to inform the parent component of the new selection.
+ *
+ * @param optionIndex - The index of the selected option.
+ */
+function onOptionSelected(optionIndex: number) {
+  if (props.mode === 'take') {
+    emit('update:selectedOption', optionIndex);
   }
-  
-  const options = ref<AnswerOption[]>([
-    { id: 1, text: 'Option A' },
-    { id: 2, text: 'Option B' },
-    { id: 3, text: 'Option C' },
-    { id: 4, text: 'Option D' },
-  ]);
-  
-  const selectedOption = ref<number|null>(null);
-  
-  const submitAnswer = () => {
-    console.log('Submitted answer ID:', selectedOption.value);
-    // Here you might emit an event or make an API call to record the answer
-    // For example, this.$emit('answer-submitted', selectedOption.value);
-  };
-  </script>
-  
+}
+</script>
+
+<style scoped>
+.correct-answer {
+  font-weight: bold;
+  color: green;
+}
+</style>
