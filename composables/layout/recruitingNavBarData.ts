@@ -1,4 +1,4 @@
-import { IconReportAnalytics, IconLayoutDashboard, IconCalendarStats, IconAd2,IconHierarchy3,IconExchange, IconBlockquote, IconAdjustments, IconTable, IconAlarm, IconUsers } from '@tabler/icons-vue';
+import { IconCalendarPlus, IconBriefcase, IconFileText, IconReportAnalytics, IconLayoutDashboard, IconCalendarStats, IconAd2,IconHierarchy3,IconExchange, IconBlockquote, IconAdjustments, IconUserPlus, IconAlarm, IconUsers, IconBriefcaseFilled } from '@tabler/icons-vue';
 
 import type { navMenu } from '~/types/layout/NavMenuTypes';
 
@@ -16,41 +16,89 @@ const recruitingNavbarMenu: navMenu[] = [
             show: true
         },
         {
-            title: 'Job Posting',
-            icon: IconAd2,
-            to: '/recruiting/job_posting',
-            //    show: getrecruitingPermissions()?.employeeDashboard?.value || false,
-            show: true
-        },
-        {
             title: 'Job Management',
-            icon: IconUsers,
-            to: '/recruiting/job_listings_management',
-            //       show: getrecruitingPermissions()?.reports?.value || false,
-            show: true
+            icon: IconBriefcase,
+            show: true,
+            children: [
+                
+                {
+                    title: 'Job Lists',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/jobManagement/JobManagementPage'
+                },
+                {
+                    title: 'Job Postings',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/jobManagement/JobPostingManagementPage'
+                },
+                { 
+                    title: 'Job Templates',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/jobManagement/JobTemplateManagementPage'
+                },
+                
+                
+            ]
         },
         {
-            title: 'Applications',
-            icon: IconCalendarStats,
-            to: '/recruiting/application_management',
-            //     show: getrecruitingPermissions()?.adminTimeoffView?.value || false,
-            show: true
+            title: 'Application Management',
+            icon: IconFileText,
+            show: true,
+            children: [
+                
+                {
+                    title: 'Applicants',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/applicationManagement/Applicant'
+                },
+                {
+                    title: 'Applications',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/applicationManagement/Applications'
+                },
+                { 
+                    title: 'Application Forms',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/applicationManagement/ApplicationForms'
+                },
+                
+                
+            ]
         },
         {
-            title: 'Interview Scheduling',
-            icon: IconAlarm,
-            to: '/recruiting/interview_scheduling',
-            //      show: getrecruitingPermissions()?.employeeTimeoffView?.value || false,
-            show: true
-
-        },
-        {
-            title: 'Job Boards',
-            icon: IconTable,
-            to: '/recruiting/job_board_integration',
-            //      show: getrecruitingPermissions()?.employeeTimeoffView?.value || false,
-            show: true
-
+            title: 'Onboarding Management',
+            icon: IconUserPlus,
+            show: true,
+            children: [
+                {
+                    title: 'Tasks',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/onboardingManagement/OnboardingTasksPage'
+                },
+                
+                {
+                    title: 'Documents',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/onboardingManagement/RecruitingDocumentsPage'
+                },
+                {
+                    title: 'Onboard Materials',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/onboardingManagement/OrientationMaterialsPage'
+                },
+                { 
+                    title: 'Quizes',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/onboardingManagement/OrientationQuizzesPage'
+                },
+                { 
+                    title: 'Schedules',
+                    icon: IconReportAnalytics,
+                    to: '/recruiting/onboardingManagement/OrientationSchedulesPage'
+                },
+                
+                
+            ]
         },
         {
             title: 'Reports',
@@ -60,14 +108,8 @@ const recruitingNavbarMenu: navMenu[] = [
             show: true
 
         },
-        {
-            title: 'Form Builder',
-            icon: IconBlockquote,
-            to: '/recruiting/form_builder',
-            //      show: getrecruitingPermissions()?.employeeTimeoffView?.value || false,
-            show: true
 
-        },
+        
 ]
 
 const recruitingSettingsMenu: navMenu[] = [
@@ -86,6 +128,16 @@ const recruitingSettingsMenu: navMenu[] = [
             icon: IconAlarm,
             to: 'notification'
         },
+        {
+            title: 'Task Category',
+            icon: IconCalendarPlus,
+            to: 'task_category'
+    },
+    {
+        title: 'Job Category',
+        icon: IconBriefcaseFilled,
+        to: 'job_category'
+    },
         
 ]
 

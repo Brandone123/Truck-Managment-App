@@ -35,10 +35,10 @@ export function useModuleMenu() {
             show: true,
         },
         {
-            name: 'Attendance',
+            name: 'Workforce Management',
             img: 'images/modules/attendance.jpg',
-            link: '/attendance',
-            show: modulePermissions?.attendance?.value as any || false
+            link: '/workforce',
+            show: true, // modulePermissions?.maintenanceManagement?.value as any || false
         },
         {
             name: 'Employee Information And Operation',
@@ -76,8 +76,13 @@ export function useModuleMenu() {
             link: '/meeting',
             show: true, //modulePermissions?.employeeInformationAndOperation?.value as any || false
         },
-        
-       
+        {
+            name: 'Accounting',
+            img: 'images/modules/accounting.jpg',
+            link: '/accounting',
+            show: true, //modulePermissions?.employeeInformationAndOperation?.value as any || false
+        },
+
     ]
     return menu.filter((item) => item.show);
 }
