@@ -40,12 +40,41 @@
       </v-tabs>
     </div>
 
-    <SharedUiCustomTable show-select items-per-page="50" :sticky-top="true" :sticky-top-offset="95"
-      :show-footer-in-head="false" :headers="headers" :items="filteredPurchase" :loading="loading">
-      <template v-slot:item.actions="{ item }">
-        <v-icon class="ml-2" color="primary" dense @click="$emit('view', item)">mdi-eye</v-icon>
+    <SharedUiServerTable class="custom-table" :show-footer-in-head="false" :headers="headers" :items="purchaseOrderList"
+      :loading="loading" @update:selectedFilters="selectedFilters = $event" :sticky-top="true" :sticky-top-offset="96"
+      v-model="selectedItems" return-object :items-per-page="pagination.itemsPerPage" :sort-by="pagination.sortBy"
+      :items-length="total_items" @update:options="pagination = $event" @hoveredRow="hoveredRow = $event;">
+      <template v-slot:item.actions="{ item, index }">
+        <SharedTableActionMenu :hoveredRow="hoveredRow" :index="index">
+          <v-list-item @click="$emit('view', item)" append-icon="mdi-eye">View Details</v-list-item>
+          <v-divider></v-divider>
+          <v-list-item append-icon="mdi-check" v-if="item.status == 'draft'"
+            @click="$emit('approved', item.id)">Approve</v-list-item>
+          <v-list-item append-icon="mdi-invlice-list-outline" v-if="item.status == 'approved'"
+            @click="$emit('purchased', item.id)">Mark As Purchased</v-list-item>
+          <v-list-item @click="$emit('receive', item)" append-icon="mdi-package-variant-closed"
+            v-if="['purchased', 'received, partial'].includes(item.status)">Receive</v-list-item>
+          <v-list-item @click="$emit('closed', item)"
+            v-if="['received, full'].includes(item.status)">Close</v-list-item>
+          <v-list-item @click="$emit('edit', item)" append-icon="mdi-pencil">Edit</v-list-item>
+          <v-list-item @click="$emit('delete', item)" append-icon="mdi-delete">Delete</v-list-item>
+        </SharedTableActionMenu>
+        <!-- <div class="d-flex">
+          <v-icon class="ml-2" color="primary" dense @click="$emit('view', item)">mdi-eye</v-icon>
         <v-icon class="ml-2" color="primary" dense @click="$emit('edit', item)">mdi-pencil</v-icon>
         <v-icon class="ml-2" color="red" dense @click="$emit('delete', item)">mdi-delete</v-icon>
+        </div> -->
+      </template>
+
+      <template v-slot:filters>
+        <div class="d-inline-flex">
+          <!-- <SharedInputPartCategoryAutoCompleteInput width="200px" flat density="compact" hide-details variant="solo"
+            class="filter-input mr-1" v-model="selectedFilters.category_id" /> -->
+          <SharedInputPartLocationAutoCompleteInput width="200px" flat density="compact" hide-details variant="solo"
+            class="filter-input mr-1" v-model="selectedFilters.location_id" />
+          <SharedInputPartSuppliersAutoCompleteInput label="Vendor" flat width="200px" density="compact" hide-details
+            variant="solo" class="filter-input mr-1" v-model="selectedFilters.vendor_id" />
+        </div>
       </template>
 
       <template v-slot:item.id="{ item }">
@@ -55,23 +84,12 @@
       </template>
 
       <template v-slot:item.parts="{ item }">
-        <div v-if="item.parts" v-for="(part, index) in item.parts" :key="index">
-          <div v-if="index < 2">
-            {{ part.part_id }}
-          </div>
-          <div v-else-if="index === 2">
-            <span>2</span>
-            <v-tooltip activator="parent" location="top">
-              <div class="text-left">
-                <div v-for="(partId, i) in item.parts.slice(2)" :key="i">
-                  {{ partId.part_id }}<br>
-                </div>
-              </div>
-            </v-tooltip>
-            <span class="text-secondary font-weight-bold"> + {{ item.parts.length - 2 }} more</span>
-          </div>
-        </div>
-        <span v-else>N/A</span>
+        <span class="font-weight-semibold" style="cursor: pointer; font-size: small">
+          {{ formatPartsNumbers(item.parts).name + ` ` }}
+        </span>
+        <span class="text-primary font-weight-bold" style="cursor: pointer; font-size: small">
+          {{ formatPartsNumbers(item.parts).count > 0 ? `+${formatPartsNumbers(item.parts).count} more` : '' }}
+        </span>
       </template>
 
       <template v-slot:item.status="{ item }">
@@ -80,14 +98,10 @@
         <span v-else></span>
       </template>
 
-      <template v-slot:item.location_id="{ item }">
-        <span>{{ getLocationName(item.location_id) }}</span>
-      </template>
-
-      <template v-slot:item.vendor_id="{ item }">
-        <span class="text-secondary" style="cursor: pointer;" v-if="item.vendor_id">
+      <template v-slot:item.vendor="{ item }">
+        <span class="text-secondary" style="cursor: pointer;" v-if="item.vendor">
           <v-icon size="18">mdi-store</v-icon>
-          <span style="border-bottom: 1px dotted;">{{ getVendorName(item.vendor_id) }}</span>
+          <span style="border-bottom: 1px dotted;">{{ item.vendor?.name }}</span>
         </span>
         <span v-else>N/A</span>
       </template>
@@ -105,7 +119,7 @@
       </template>
 
       <template v-slot:item.created_by="{ item }">
-        <SharedTableTechnicianItem v-if="item.created_by" :user-id="item.created_by" />
+        <SharedTableDynamicTechnicianItem :technician="(item.created_by_user as EmployeeInfo)" v-if="item.created_by" />
         <span v-else>N/A</span>
       </template>
 
@@ -123,47 +137,49 @@
           }}</span>
       </template>
       <template v-slot:item.watchers="{ item }">
-        <v-menu location="bottom" max-height="310px" width="320px" location-strategy="connected"
+        <SharedTableDynamicWatcherItem :watchers="item.watching_employees" />
+
+        <!-- <v-menu location="bottom" max-height="310px" width="320px" location-strategy="connected"
           :close-on-content-click="true" class="rounded" open-on-hover>
           <template v-slot:activator="{ props }">
             <div v-if="item.watchers" v-bind="props" class="mr-2" style="cursor: pointer; border-bottom: 1px dotted;">
               {{ item.watchers ? (item.watchers.length === 1 ? '1 watcher' : item.watchers.length + ' watchers') : '' }}
             </div>
           </template>
-          <v-row no-gutters>
-            <v-col cols="12">
-              <v-card class="rounded-lg">
-                <v-card-text>
-                  <div class="mb-3">
-                    <div v-if="authStore.user?.id !== item.watchers[0]">
-                      <div class="font-weight-bold text-h6">Not Watching</div>
-                      <span>
-                        You're not watching this record, so you will not receive any <b class="text-secondary">Watched
-                          Notifications</b> .
-                      </span>
-                      <div class="mt-4 mb-4">
-                        <span class="rounded pa-1 watch" style="border: 1px solid silver;cursor: pointer;">
-                          <v-icon style="font-size:medium">mdi-bell-outline</v-icon> Watch
-                        </span>
-                      </div>
-                    </div>
-                    <v-divider class="my-2"></v-divider>
-                    <span class="text-grey mt-3 mb-4">
-                      {{ item.watchers ? (item.watchers.length === 1 ? 'WATCHER: 1' : ' WATCHERS: ' +
-                        item.watchers.length) :
-                        '' }}
-                    </span>
-                    <div v-for="(watcherId, index) in item.watchers" :key="index" v-if="item.watchers" class="mb-1">
-                      <SharedTableTechnicianItem v-if="item.created_by" :user-id="watcherId" />
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-menu>
+  <v-row no-gutters>
+    <v-col cols="12">
+      <v-card class="rounded-lg">
+        <v-card-text>
+          <div class="mb-3">
+            <div v-if="authStore.user?.id !== item.watchers[0]">
+              <div class="font-weight-bold text-h6">Not Watching</div>
+              <span>
+                You're not watching this record, so you will not receive any <b class="text-secondary">Watched
+                  Notifications</b> .
+              </span>
+              <div class="mt-4 mb-4">
+                <span class="rounded pa-1 watch" style="border: 1px solid silver;cursor: pointer;">
+                  <v-icon style="font-size:medium">mdi-bell-outline</v-icon> Watch
+                </span>
+              </div>
+            </div>
+            <v-divider class="my-2"></v-divider>
+            <span class="text-grey mt-3 mb-4">
+              {{ item.watchers ? (item.watchers.length === 1 ? 'WATCHER: 1' : ' WATCHERS: ' +
+              item.watchers.length) :
+              '' }}
+            </span>
+            <div v-for="(watcherId, index) in item.watchers" :key="index" v-if="item.watchers" class="mb-1">
+              <SharedTableTechnicianItem v-if="item.created_by" :user-id="watcherId" />
+            </div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-col>
+  </v-row>
+  </v-menu> -->
       </template>
-    </SharedUiCustomTable>
+    </SharedUiServerTable>
   </div>
 
 </template>
@@ -171,53 +187,31 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { usePurchaseOrderStore } from '@/stores/maintenance/purchaseOrderStore';
-import type { PartSupply } from '@/types/maintenance/partSupplyTypes';
 import type { filterItem } from '~/types/layout/table';
-import { useRouter } from 'vue-router';
-import type { PurchaseOrder } from '~/types/maintenance/purchaseOrderTypes';
 import moment from 'moment'
+import type { EmployeeInfo } from '~/types/store/employee';
+import type { PurchasePart } from '~/types/maintenance/purchaseOrderTypes';
+const selectedFilters = ref<Record<string, string>>({})
+const activeFilter = ref<string>("all");
+const selectedItems = ref<Array<any>>([])
+const hoveredRow = ref<number | null>(null)
 
-const router = useRouter();
-
-// const props = defineProps({
-//   search: String,
-// });
 
 const authStore = useAuthStore()
 
-const emit = defineEmits(['view', 'edit', 'delete']);
+const emit = defineEmits(['view', 'edit', 'delete', 'approved', 'receive', 'purchased', 'closed']);
 
 const purchaseOrderStore = usePurchaseOrderStore();
-const { purchaseOrderList, loading } = storeToRefs(purchaseOrderStore)
-
-const partLocationStore = usePartLocationStore()
-const { partLocations } = storeToRefs(partLocationStore)
+const { purchaseOrderList, pagination: purchaseOrderPagination, loadingSummary, total_items, loading } = storeToRefs(purchaseOrderStore)
 
 const suppliersStore = useSuppliersStore();
 const suppliers = computed(() => suppliersStore.suppliers);
 
-const headers = [
-  { title: 'PO Number', key: 'id' },
-  { title: 'Status', key: 'status' },
-  { title: 'Part Location', key: 'location_id' },
-  { title: 'Vendor', key: 'vendor_id' },
-  { title: 'Parts', key: 'parts' },
-  { title: 'Description', key: 'description' },
-  { title: 'Created By', key: 'created_by' },
-  { title: 'Created On', key: 'created_at' },
-  { title: 'Total', key: 'total_amount' },
-  { title: 'Watchers', key: 'watchers' },
-  // { title: 'Labels', key: 'labels' },
-  { title: 'Actions', key: 'actions', sortable: false },
-];
-
-const getLocationName = (locationId: number) => {
-  return partLocations.value?.find(location => location.id == locationId)?.name
-}
-
-const getVendorName = (vendorId: number) => {
-  return suppliers.value?.find(vendor => vendor.id == vendorId)?.name
-}
+const formatPartsNumbers = (parts: PurchasePart[]) => {
+  const partNumbers = parts?.map(part => part.part_number).filter(part_number => part_number); // Filter out any undefined or null names
+  const firstTwoParts = partNumbers.slice(0, 2);
+  return { name: [...firstTwoParts].filter(Boolean).join(', '), count: partNumbers.length > 2 ? partNumbers.length - 2 : 0 };
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -241,15 +235,6 @@ const getStatusColor = (status: string) => {
       return 'gray'
   }
 }
-
-const activeFilter = ref<string>('all')
-
-const filteredPurchase = computed(() => {
-  if (activeFilter.value == 'all') {
-    return purchaseOrderList.value
-  }
-  return purchaseOrderList.value.filter(item => item.status == activeFilter.value)
-})
 
 const closedCount = computed(() => {
   return purchaseOrderList.value.filter(item => item.status == 'closed')?.length || 0
@@ -287,21 +272,92 @@ const additionalTabs = [
   { value: 'pending, approval', title: 'Pending Approval', color: 'yellow', count: pendingCount },
 ]
 
-const filterParts = computed(() => {
-  return [
-    {
-      title: 'Status',
-      key: 'status',
-      items: ['Draft', 'Pending Approval', 'Rejected', 'Approved', 'Purchased', 'Received, Partial', 'Received, Full', 'Closed'],
-      width: '300px',
-    }
-  ] as filterItem[]
-})
+
+const statuses = ref([
+  { value: 'draft', title: 'Draft' },
+  { value: 'pending approval', title: 'Pending Approval' },
+  { value: 'approved', title: 'Approved' },
+  { value: 'purchased', title: 'Purchased' },
+  { value: 'received, partial', title: 'Received, Partial' },
+  { value: 'received, full', title: 'Received, Full' },
+  { value: 'closed', title: 'Closed' },
+  { value: 'rejected', title: 'Rejected' }
+])
 
 const getRelativeDateTime = (dateString: any) => {
   return moment(dateString).from(moment());
 }
 
+
+const pagination = computed({
+  get() {
+    return purchaseOrderPagination.value
+  },
+  set(value) {
+    purchaseOrderStore.setPagination(value);
+  }
+})
+
+const searchQuery = computed(() => {
+  let payload: Record<string, any> = {
+    page: pagination.value.page,
+    items_per_page: pagination.value.itemsPerPage,
+  }
+
+  if (pagination.value.sortBy.length > 0) {
+    payload['sort_by'] = pagination.value.sortBy[0]
+  }
+
+  if (Boolean(pagination.value.search)) {
+    payload['search'] = pagination.value.search
+  }
+
+  payload['filters'] = {}
+
+  if (Object.keys(selectedFilters.value).length > 0) {
+    payload['filters'] = selectedFilters.value
+  }
+
+  if (activeFilter.value != 'all') {
+    payload['filters'].status = activeFilter.value
+  }
+
+  return payload
+})
+
+watch(() => selectedFilters.value, () => {
+  selectedItems.value = [];
+  purchaseOrderStore.fetchPurchaseOrders(searchQuery.value);
+}, { deep: true })
+
+watch(() => pagination.value, (newVal, oldVal) => {
+  if (!_isEqual(newVal, oldVal)) {
+    selectedItems.value = [];
+    purchaseOrderStore.fetchPurchaseOrders(searchQuery.value);
+  }
+}, { deep: true })
+
+watch(() => activeFilter.value, () => {
+  selectedItems.value = [];
+  purchaseOrderStore.fetchPurchaseOrders(searchQuery.value);
+})
+
+onMounted(() => {
+  purchaseOrderStore.fetchPurchaseOrders(searchQuery.value);
+});
+const headers = [
+  { title: 'PO Number', key: 'id' },
+  { title: 'Status', key: 'status' },
+  { title: 'Vendor', key: 'vendor' },
+  { title: 'Parts', key: 'parts' },
+  { title: 'Description', key: 'description' },
+  { title: 'Created By', key: 'created_by' },
+  { title: 'Created On', key: 'created_at' },
+  { title: 'Total', key: 'total_amount' },
+  { title: 'Watchers', key: 'watchers' },
+  // { title: 'Labels', key: 'labels' },
+  { title: '', key: 'actions', sortable: false, minWidth: '50', align: 'end' },
+];
 
 </script>
 
@@ -313,5 +369,12 @@ const getRelativeDateTime = (dateString: any) => {
   border-radius: 4px;
   white-space: pre-line;
   font-family: monospace;
+}
+
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) th:last-child),
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) td:last-child) {
+  position: sticky;
+  right: 0;
+  width: 20px;
 }
 </style>

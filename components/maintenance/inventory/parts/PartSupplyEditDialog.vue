@@ -20,11 +20,9 @@
                       <v-text-field variant="outlined" flat density="compact" label="Part Number"
                         v-model="localPartSupply.part_number" :rules="[validation.required]"></v-text-field>
                     </v-col>
-                    <v-col class="pb-0" cols="12">
-                      <v-textarea variant="outlined" flat density="compact" label="Description"
-                        v-model="localPartSupply.description" :rules="[validation.required]"></v-textarea>
-                    </v-col>
-                    <v-col class="pb-0" cols="12">
+                    <!-- TODO This is to be done -->
+
+                    <!-- <v-col class="pb-0" cols="12">
                       <v-row>
                         <v-col class="pb-0" cols="12" md="6">
                           <v-img :src="localPartSupply.photo"
@@ -45,16 +43,15 @@
                             variant="outlined" density="compact"></v-file-input>
                         </v-col>
                       </v-row>
-                    </v-col>
+                    </v-col> -->
 
                     <v-col class="pb-0" cols="12" sm="6">
-                      <v-select variant="outlined" flat density="compact"
-                        :items="['Battery', 'Belts', 'Brakets', 'Cores', 'Electrical', 'DEF', 'Filters', 'Fluids', 'Oil', 'Parts', 'Suspension', 'Tires', 'Miscellaneous']"
-                        label="Category" v-model="localPartSupply.category" required></v-select>
+                      <v-select variant="outlined" flat density="compact" :items="partCategories"
+                        label="Category" item-title="name" item-value="id" v-model="localPartSupply.category_id" required></v-select>
                     </v-col>
                     <v-col class="pb-0" cols="12" sm="6">
-                      <v-text-field variant="outlined" flat density="compact" label="Manufacturer"
-                        v-model="localPartSupply.manufacturer" required></v-text-field>
+                      <v-select :items="partManufacturers" variant="outlined" flat density="compact" label="Manufacturer"
+                        v-model="localPartSupply.manufacturer_id" item-title="name" item-value="id" required></v-select>
                     </v-col>
                     <v-col class="pb-0" cols="12" sm="6">
                       <v-text-field variant="outlined" flat density="compact" label="Manufacturer Part Number"
@@ -72,8 +69,12 @@
                     </v-col>
                     <v-col class="pb-0" cols="12" sm="6">
                       <v-select variant="outlined" flat density="compact"
-                        :items="['Each', 'Foot', 'Gallon', 'Inch', 'Ounce', 'Pound', 'Quart', 'Set', 'Tube', 'Yard']"
-                        label="Measurement Unit" v-model="localPartSupply.measurement_unit" required></v-select>
+                        :items="partMeasurementUnits" item-title="name" item-value="id"
+                        label="Measurement Unit" v-model="localPartSupply.measurement_unit_id" required></v-select>
+                    </v-col>
+                    <v-col class="pb-0" cols="12">
+                      <v-textarea variant="outlined" flat density="compact" label="Description"
+                        v-model="localPartSupply.description" :rules="[validation.required]"></v-textarea>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -134,7 +135,8 @@
                     </v-card-text>
                   </v-card>
                 </v-col>
-                <v-col cols="12">
+                <!-- TODO  To be worked on later -->
+                <!-- <v-col cols="12">
                   <v-card>
                     <v-card-title>Purchase History</v-card-title>
                     <v-card-text>
@@ -170,7 +172,7 @@
                       </v-row>
                     </v-card-text>
                   </v-card>
-                </v-col>
+                </v-col> -->
               </v-row>
             </v-col>
           </v-row>
@@ -190,6 +192,11 @@
 import { ref, computed, watch } from 'vue';
 import type { PartSupply, Location } from '@/types/maintenance/partSupplyTypes';
 import { useValidation } from '~/composables/formValidation'
+import { usePartCategoryStore } from '@/stores/maintenance/partCategoryStore';
+import { usePartManufacturerStore } from '@/stores/maintenance/partManufacturer';
+import { usePartLocationStore } from '@/stores/maintenance/partLocationStore';
+import { usePartMeasurementUnitstore } from '@/stores/maintenance/partMeasurementsUnits';
+
 
 const props = defineProps({
   modelValue: Boolean,
@@ -201,6 +208,16 @@ const props = defineProps({
 
 const partLocationStore = usePartLocationStore()
 const {partLocations} = storeToRefs(partLocationStore)
+
+const partCategoryStore = usePartCategoryStore()
+const { partCategories} = storeToRefs(partCategoryStore)
+
+const partManufacturerStore = usePartManufacturerStore()
+const { partManufacturers} = storeToRefs(partManufacturerStore)
+
+const partMeasurementUnitStore = usePartMeasurementUnitstore()
+const { partMeasurementUnits} = storeToRefs(partMeasurementUnitStore)
+
 
 const validation = useValidation();
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
@@ -271,14 +288,24 @@ const savePartSupply = async () => {
     return
   }
 
-  if (uploadDocument.value.length) localPartSupply.value.document = uploadDocument.value[0]
-  if (uploadPhoto.value.length) localPartSupply.value.photo = uploadPhoto.value[0]
+  // if (uploadDocument.value.length) localPartSupply.value.document = uploadDocument.value[0]
+  // if (uploadPhoto.value.length) localPartSupply.value.photo = uploadPhoto.value[0]
   
   let payload = JSON.parse(JSON.stringify(localPartSupply.value))
 
   //Step necessary if submitting as form data
-  payload.locations = localPartSupply.value.locations ? JSON.stringify(localPartSupply.value.locations) as any : null
-  payload.purchase_history = localPartSupply.value.purchase_history ? JSON.stringify(localPartSupply.value.purchase_history) as any : null
+  payload.locations = localPartSupply.value.locations ? JSON.stringify(localPartSupply.value.locations.map((location) => {
+    return {
+      location_id: location.location_id,
+      aisle: location.aisle,
+      row: location.row,
+      bin: location.bin,
+      quantity: location.quantity,
+      quantity_PO: location.quantity_PO,
+      quantity_WO: location.quantity_WO,
+    }
+  })) as any : null
+  // payload.purchase_history = localPartSupply.value.purchase_history ? JSON.stringify(localPartSupply.value.purchase_history) as any : null
   
   emit('save', payload);
   emit('update:modelValue', false);

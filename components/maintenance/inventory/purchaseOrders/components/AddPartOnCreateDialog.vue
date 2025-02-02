@@ -44,7 +44,7 @@
                             <div class="d-flex justify-space-between">
                                 <span>
                                     <span class="text-h6">Subtotal</span><br>
-                                    <span class="text-caption">{{ localPurchaseOrderPart.quantity_ordered ?? 0 }} x
+                                    <span class="text-caption">{{ localPurchaseOrderPart.quantity_received ?? 0 }} x
                                         ${{ localPurchaseOrderPart.unit_cost ?? 0 }}</span>
                                 </span>
                                 <span class="text-h6">${{ localPurchaseOrderPart.subtotal ?? 0 }}</span>
@@ -84,10 +84,6 @@ const props = defineProps({
     calculateSubtotalPart: {
         type: Function,
         required: true,
-    },
-    editing: {
-        type: Boolean,
-        required: true,
     }
 })
 
@@ -110,14 +106,14 @@ const updateSelectedPart = (part: Part) => {
 }
 
 const calculateSubtotal = () => {
-    localPurchaseOrderPart.value.subtotal = parseFloat(((localPurchaseOrderPart.value.unit_cost ?? 0) * (localPurchaseOrderPart.value.quantity_ordered ?? 0)).toFixed(2))
+    localPurchaseOrderPart.value.subtotal = Number(((localPurchaseOrderPart.value.unit_cost ?? 0) * (localPurchaseOrderPart.value.quantity_ordered ?? 0)).toPrecision(2))
 }
 
 
 const emit = defineEmits(['close', 'save', 'update'])
 
 const title = computed(() => {
-    return props.editing ? 'Edit Part' : 'Add Part'
+    return 'Add Part';
 })
 
 const partForm = ref<HTMLFormElement | null>(null)
@@ -138,12 +134,9 @@ const save = async () => {
     if (!formStatus.valid) {
         return
     }
-    let payload = JSON.parse(JSON.stringify({ ...localPurchaseOrderPart.value, part_number: selectedPart.value?.part_number }))
-    if (props.editing) {
-        emit('update', payload)
-    } else {
-        emit('save', payload)
-    }
+    // console.log(localPurchaseOrderPart.value)
+    emit('save', JSON.parse(JSON.stringify(localPurchaseOrderPart.value)))
+
     closeDialog()
 }
 

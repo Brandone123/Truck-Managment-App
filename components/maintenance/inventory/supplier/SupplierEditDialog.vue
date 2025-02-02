@@ -21,12 +21,32 @@
                         :rules="[validation.required]"></v-text-field>
                     </v-col>
                     <v-col cols="12" sm="6" class="pb-0">
-                      <v-text-field variant="outlined" density="compact" label="Phone Number"
-                        v-model="localSupplier.phone" required></v-text-field>
+                      <SharedInputPhoneInput variant="outlined" flat density="compact" v-model="localSupplier.phone"
+                        :country="localSupplier.country" label="Phone number" :rules="[validation.required]">
+                      </SharedInputPhoneInput>
                     </v-col>
                     <v-col cols="12" sm="6" class="pb-0">
                       <v-text-field variant="outlined" density="compact" label="Website" v-model="localSupplier.website"
                         required></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6" class="pb-0">
+                      <SharedInputCountryInput variant="outlined" flat density="compact" :items="countries"
+                        item-value="iso2" item-title="name" v-model="localSupplier.country" label="Country"
+                        :rules="[validation.required]" />
+                    </v-col>
+                    <v-col cols="12" sm="6" class="pb-0">
+                      <SharedInputStateInput variant="outlined" flat density="compact" :items="states" item-value="iso2"
+                        item-title="name" v-model="localSupplier.state" label="State" :country="localSupplier.country"
+                        :rules="[validation.required]" />
+                    </v-col>
+                    <v-col cols="12" sm="6" class="pb-0">
+                      <SharedInputCityInput variant="outlined" flat density="compact" :items="cities" item-value="iso2"
+                        item-title="name" v-model="localSupplier.city" label="City" :rules="[validation.required]"
+                        :country="localSupplier.country" :state="localSupplier.state" />
+                    </v-col>
+                    <v-col cols="12" sm="6" class="pb-0">
+                      <v-text-field variant="outlined" density="compact" label="Zip/Postal Code"
+                        v-model="localSupplier.zip" required></v-text-field>
                     </v-col>
                     <v-col cols="12" class="pb-0">
                       <v-text-field variant="outlined" density="compact" label="Address" v-model="localSupplier.address"
@@ -35,22 +55,6 @@
                     <v-col cols="12" class="pb-0">
                       <v-text-field variant="outlined" density="compact" label="Address Line 2"
                         v-model="localSupplier.address_line2" required></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" class="pb-0">
-                      <v-text-field variant="outlined" density="compact" label="City" v-model="localSupplier.city"
-                        required></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" class="pb-0">
-                      <v-text-field variant="outlined" density="compact" label="State/Province/Region"
-                        v-model="localSupplier.state" required></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" class="pb-0">
-                      <v-text-field variant="outlined" density="compact" label="Zip/Postal Code"
-                        v-model="localSupplier.zip" required></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" class="pb-0">
-                      <v-text-field variant="outlined" density="compact" label="Country" v-model="localSupplier.country"
-                        required></v-text-field>
                     </v-col>
                     <v-col cols="12" class="pb-0">
                       <v-textarea variant="outlined" density="compact" label="Notes"
@@ -65,18 +69,9 @@
                 <v-card-text>
                   <v-row>
                     <v-col cols="12">
-                      <v-autocomplete v-model="localSupplier.watchers" :disabled="isUpdating" :items="technicians" color="blue-grey-lighten-2"
-                        item-title="full_name" item-value="user_id" label="Add Watchers" chips closable-chips multiple density="compact"
-                        variant="outlined">
-                        <template v-slot:chip="{ props, item }">
-                          <v-chip v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 24, 18)" :text="item.raw.full_name"></v-chip>
-                        </template>
-
-                        <template v-slot:item="{ props, item }">
-                          <v-list-item v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 32, 24)" :subtitle="item.raw.job_title"
-                            :title="item.raw.full_name"></v-list-item>
-                        </template>
-                      </v-autocomplete>
+                      <SharedInputEmployeeAutoCompleteInput v-model="localSupplier.watchers" color="blue-grey-lighten-2"
+                        label="Add Watchers" chips closable-chips multiple density="compact" variant="outlined">
+                      </SharedInputEmployeeAutoCompleteInput>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -96,14 +91,14 @@
                             :rules="[validation.required]"></v-text-field>
                         </v-col>
                         <v-col cols="12" md="6" class="pb-0">
-                          <v-text-field variant="outlined" density="compact" label="Phone"
-                            v-model="localSupplier.contact_information.phone"
-                            :rules="[validation.required]"></v-text-field>
+                          <SharedInputPhoneInput variant="outlined" flat density="compact"
+                            v-model="localSupplier.contact_information.phone" :country="localSupplier.country"
+                            label="Phone number" :rules="[validation.required]"></SharedInputPhoneInput>
                         </v-col>
                         <v-col cols="12" md="6" class="pb-0">
-                          <v-text-field variant="outlined" density="compact" label="Email"
+                          <v-text-field type="email" variant="outlined" density="compact" label="Email"
                             v-model="localSupplier.contact_information.email"
-                            :rules="[validation.required]"></v-text-field>
+                            :rules="[validation.required, validation.email]"></v-text-field>
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -114,33 +109,43 @@
                   <v-card>
                     <v-card-title class="text-primary">Classification</v-card-title>
                     <v-card-text>
+                      <v-alert v-if="!validClassification" class="mb-3"
+                        text="Atleast One Classification Category is Required" type="error"></v-alert>
                       <v-row>
                         <v-col cols="12" class="pb-0">
-                          <v-checkbox hide-details color="primary" variant="outlined" density="compact" label="Charging"
+                          <v-checkbox hide-details color="primary" @click="localSupplier.classification.charging"
+                            variant="outlined" density="compact" label="Charging"
                             v-model="localSupplier.classification.charging">
                           </v-checkbox>
                           <div class="ml-7 text-caption">Charging classification allows vendor to be listed on Charging
                             Entries</div>
                         </v-col>
                         <v-col cols="12" class="pb-0">
-                          <v-checkbox  hide-details color="primary" variant="outlined" density="compact" label="Fuel"
+                          <v-checkbox hide-details color="primary" variant="outlined" density="compact" label="Fuel"
                             v-model="localSupplier.classification.fuel"></v-checkbox>
-                          <div class="ml-7 text-caption">Fuel classification allows vendor to be listed on Fuel Entries</div>
+                          <div class="ml-7 text-caption">Fuel classification allows vendor to be listed on Fuel Entries
+                          </div>
                         </v-col>
                         <v-col cols="12" class="pb-0">
                           <v-checkbox hide-details color="primary" variant="outlined" density="compact" label="Parts"
                             v-model="localSupplier.classification.parts"></v-checkbox>
-                          <div class="ml-7 text-caption">Parts classification allows vendor to be listed on Parts and Purchase Orders</div>
+                          <div class="ml-7 text-caption">Parts classification allows vendor to be listed on Parts and
+                            Purchase
+                            Orders</div>
                         </v-col>
                         <v-col cols="12" class="pb-0">
                           <v-checkbox hide-details color="primary" variant="outlined" density="compact" label="Service"
                             v-model="localSupplier.classification.service"></v-checkbox>
-                          <div class="ml-7 text-caption">Service classification allows vendor to be listed on Service Entries, Work Orders, and Warranties</div>
+                          <div class="ml-7 text-caption">Service classification allows vendor to be listed on Service
+                            Entries, Work
+                            Orders, and Warranties</div>
                         </v-col>
                         <v-col hide-details cols="12" class="pb-0">
                           <v-checkbox color="primary" variant="outlined" density="compact" label="Vehicle"
                             v-model="localSupplier.classification.vehicle"></v-checkbox>
-                          <div class="ml-7 text-caption">Vehicle classification allows vendor to be listed on Vehicle Acquisitions</div>
+                          <div class="ml-7 text-caption">Vehicle classification allows vendor to be listed on Vehicle
+                            Acquisitions
+                          </div>
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -199,53 +204,12 @@ const validation = useValidation();
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
 const supplierForm = ref<HTMLFormElement | null>(null)
 
-const localSupplier = ref(JSON.parse(JSON.stringify(props.supplier)));
+const localSupplier = ref(JSON.parse(JSON.stringify({ ...props.supplier })));
 
 const title = computed(() => (props.supplier && props.supplier.id ? 'Edit Supplier' : 'Add Supplier'));
 
-const employeeStore = useEmployeeStore();
-const technicians = computed(() => employeeStore.getTechnicianList)
-
-const isUpdating = ref(false)
-
-function getAvatarIcon(label: any, size: any, circleSize: any) {
-      // Générer les initiales à partir du label
-  const words = label.split(' ');
-  const initials = words.map((word: string) => word.charAt(0).toUpperCase());
-
-  // Créer un canvas et un contexte 2D
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return '';
-  }
-
-  // Générer une couleur unique pour l'avatar
-  const colorHash = label.split('').reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
-  const color = `#${(colorHash & 0xFFFFFF).toString(16).padStart(6, '0')}`;
-
-  // Dessiner le fond avec la couleur unique
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, circleSize / 2, 0, 2 * Math.PI);
-  ctx.fill();
-
-  // Dessiner les initiales en blanc
-  ctx.font = `${(circleSize * 0.6)}px Arial`;
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(initials.slice(0, 2).join(''), size / 2, size / 2);
-
-  return canvas.toDataURL();
-
-}
-
-onMounted(() => {
-  employeeStore.fetchEmployeeList();
-})
+const countryStore = useCountriesStore();
+const { countries, states, cities } = storeToRefs(countryStore);
 
 watch(
   () => props.supplier,
@@ -254,6 +218,54 @@ watch(
   }
 );
 
+watch(
+  () => props.supplier.classification,
+  (newVal) => {
+    localSupplier.value.classification = { ...newVal };
+  },
+  { deep: true } // This ensures Vue watches deeply nested changes
+);
+
+
+watch(
+  () => localSupplier.value.country,
+  (newCountry) => {
+    if (newCountry) {
+      if (!props.supplier.country || props.supplier.country !== newCountry) {
+        localSupplier.value.state = undefined;
+        localSupplier.value.city = undefined;
+      }
+    }
+  }
+);
+
+watch(
+  () => localSupplier.value.state,
+  (newState) => {
+    if (newState) {
+      if (!props.supplier.country || props.supplier.country !== newState) {
+        localSupplier.value.city = undefined;
+      }
+    }
+  }
+);
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      if (localSupplier.value && localSupplier.value.earliest_date_time) {
+        localSupplier.value = { ...props.supplier };
+      } else {
+        localSupplier.value = {
+          ...props.supplier,
+          country: "US",
+          contact_phone: "+1",
+        };
+      }
+    }
+  }
+);
 const updateModelValue = (value: boolean) => {
   emit('update:modelValue', value);
 };
@@ -263,10 +275,18 @@ const closeDialog = () => {
   emit('close');
 };
 
+const validClassification = computed(() => {
+  return Object.keys(localSupplier.value?.classification)?.some(key => localSupplier.value?.classification[key] === true) ?? false
+})
 const saveSupplier = async () => {
   const formStatus = await supplierForm.value?.validate() || false
 
   if (!formStatus.valid) {
+    return
+  }
+
+  if (!validClassification.value) {
+    useLayoutStore().setStatusMessage('At least one classification is Required', 'error')
     return
   }
 

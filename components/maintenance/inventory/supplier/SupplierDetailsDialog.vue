@@ -1,17 +1,7 @@
 <template>
-  <v-dialog :modelValue="modelValue" @update:modelValue="updateModelValue" fullscreen scrollable>
-    <v-card class="grey-background">
-      <v-toolbar color="primary" dark density="compact">
-        <v-toolbar-title>Supplier #{{ supplier.id }}</v-toolbar-title>
-        <v-spacer></v-spacer>
-        <v-btn icon @click="closeDialog">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-toolbar>
-      <v-card-text>
-        <v-row>
+        <v-row class="mt-5">
           <v-col cols="12" md="6">
-            <v-row>
+            <v-row >
               <v-col cols="12">
                 <v-card>
                   <v-card-title class="font-weight-bold text-primary">Supplier Details</v-card-title>
@@ -120,13 +110,6 @@
             </v-card>
           </v-col>
         </v-row>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn color="primary" @click="closeDialog">Close</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script lang="ts" setup>
