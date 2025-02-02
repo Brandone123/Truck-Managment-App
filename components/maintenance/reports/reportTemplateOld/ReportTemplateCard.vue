@@ -5,7 +5,13 @@
       <v-card-text>
         <p class="text-caption">{{ template.description }}</p>
         <div class="d-flex justify-space-between align-center" style="height:40px;">
-          <v-chip density="compact">{{ getTemplateGroupName(template.group) }}</v-chip>
+          <div>
+            <v-btn class="mr-2" variant="tonal" size="x-small" v-show="isHovering" @click.stop="$emit('edit', template)"
+              icon><v-icon>mdi-pencil</v-icon></v-btn>
+            <v-btn variant="tonal" size="x-small" v-show="isHovering" color="error"
+              @click.stop="$emit('delete', template.id)" icon><v-icon>mdi-delete</v-icon></v-btn>
+          </div>
+          <v-chip density="compact">{{ getTemplateName(template.group) }}</v-chip>
         </div>
       </v-card-text>
     </v-card>
@@ -14,6 +20,7 @@
 
 <script lang="ts" setup>
 import { defineProps } from 'vue';
+import { useReportTemplateStore } from '@/stores/maintenance/reportTemplateStore';
 import type { ReportTemplate } from '@/types/maintenance/reportTemplate';
 
 const props = defineProps({
@@ -27,9 +34,9 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['click']);
+const emit = defineEmits(['click', 'edit', 'delete']);
 
-const getTemplateGroupName = (value: string) => {
+const getTemplateName = (value: string) => {
   return props.templateGroups?.find(template => template.value == value)?.title
 }
 </script>
