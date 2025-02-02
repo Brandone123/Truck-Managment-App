@@ -4,16 +4,17 @@
     <v-card-text>
       <div class="text-center"> 
           <div v-if="loading"> 
-              <v-progress-circular style="height: 310px;" indeterminate color="primary"></v-progress-circular>
+              <v-progress-circular style="height: 350px;" indeterminate color="primary"></v-progress-circular>
             </div>
           <div v-else>
-            <apexchart
-              type="donut"
-              height="369px"
-              :options="chartOptions.chartOptions"
-              :series="chartData"
-            >
-          </apexchart>
+            <client-only>
+              <apexchart
+                type="donut"
+                height="350"
+                :options="chartOptions"
+                :series="chartData"
+              />
+            </client-only>
           </div>
       </div>
     </v-card-text>
@@ -84,7 +85,6 @@
     const primary = theme.current.value.colors.primary;
   
     return {
-      chartOptions: {
         colors: ["#3f51b5", "#f44336", "#ff9800", "#8bc34a", "#9e9e9e"],
         chart: {
           type: "donut",
@@ -101,7 +101,6 @@
           position: "top",
         },
         tooltip: { theme: "light", fillSeriesColor: true },
-      },
     };
   });
   

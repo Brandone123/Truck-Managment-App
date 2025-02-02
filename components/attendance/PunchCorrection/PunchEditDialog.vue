@@ -25,7 +25,9 @@
             </v-col>
             <v-col class="pt-0" cols="12" sm="6">
               <v-row justify="center" align='center'>
-                <v-text-field v-model="localPunch.corrected_time" :label="corrected_time_label" style="margin-left: 13px;"
+                <v-text-field
+                  :rules="[localPunch.correction_type == 'Clock Out' ? validation.validateClockOut(correctedTime, clockInTime) : validation.validateClockIn(correctedTime, clockOutTime)]"
+                  v-model="localPunch.corrected_time" :label="corrected_time_label" style="margin-left: 13px;"
                   variant="solo" flat density="compact">
                 </v-text-field>
                 <input type="datetime-local" step="1" class="hidden-placeholder mr-3 bg-white pr-4"
@@ -48,7 +50,7 @@
       <v-card-actions>
         <v-btn color="primary" @click="closeDialog">Cancel</v-btn>
         <v-spacer></v-spacer>
-        <v-btn color="primary" @click="saveRequest">Save</v-btn>
+        <v-btn color="primary" data-test="save" @click="saveRequest">Save</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -62,7 +64,8 @@ import { useAttendanceStore } from '@/stores/attendance/attendance';
 import { useEmployeeStore } from '@/stores/employee';
 import { storeToRefs } from 'pinia';
 import type { AttendancePunchCorrection } from '~/types/attendance/attendanceTypes';
-
+import moment from 'moment';
+import type { AttendanceHistory } from '~/types/attendance/attendanceTypes';
 const props = defineProps({
   modelValue: Boolean,
   punch: {
@@ -76,6 +79,7 @@ const emit = defineEmits(['update:modelValue']);
 const attendanceStore = useAttendanceStore();
 const { attendanceHistory } = storeToRefs(attendanceStore);
 
+const validation = useValidation();
 const employeeStore = useEmployeeStore();
 const { employeeList } = storeToRefs(employeeStore);
 
@@ -102,6 +106,7 @@ const corrected_time_label = ref(`Corrected Time*`);
 const formatted_time = ref('')
 
 const nativeDateTimeInput = ref<HTMLInputElement | null>(null);
+  const punchForm = ref<HTMLFormElement | null>(null)
 
 function extractSubstring(inputString) {
   // Define the possible starting characters
@@ -140,8 +145,8 @@ const updateCorrectedTime = (event: Event) => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: true, // Use 12-hour format
-    timeZoneName: 'short' // Include AM/PM in the output
+    hour12: true,
+    timeZoneName: 'short'
   };
 
   const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date);
@@ -149,13 +154,9 @@ const updateCorrectedTime = (event: Event) => {
   // Remove the space before the time
   const cleanedDate = formattedDate.replace(/(\s+)(\d{1,2}:\d{2}:\d{2} [APM]+)$/g, '$2');
 
-  console.log("===== \n", localPunch.value.corrected_time, cleanedDate);
-
   localPunch.value.corrected_time = extractPrefixUntil(cleanedDate);
   formatted_time.value = extractPrefixUntil(cleanedDate)
 };
-
-
 
 watch(() => props.punch, (newPunch) => {
   corrected_time_label.value = ''
@@ -176,7 +177,26 @@ const closeDialog = () => {
   emit('update:modelValue', false);
 };
 
+const currentAttendace = ref()
+watch(() => localPunch.value.corrected_time, () => {
+  currentAttendace.value = attendanceHistory.value.find((attendance: any) => attendance.id = localPunch.value.attendance_id)
+})
+const correctedTime = computed(() => {
+  return extractPrefixUntil(localPunch.value.corrected_time)
+})
+const clockInTime = computed(() => {
+  return extractPrefixUntil(attendanceHistory?.value.find((attendance: AttendanceHistory) => attendance.id === localPunch.value.attendance_id)?.clock_in_time);
+})
+const clockOutTime = computed(() => {
+  return extractPrefixUntil(attendanceHistory?.value.find((attendance: AttendanceHistory) => attendance.id === localPunch.value.attendance_id)?.clock_out_time);
+})
+
 const saveRequest = async () => {
+  const formStatus = await punchForm.value?.validate() || false
+
+  if (!formStatus.valid) {
+    return
+  }
   closeDialog();
   const payload: Partial<AttendancePunchCorrection> = {};
   if (localPunch.value.id) {
