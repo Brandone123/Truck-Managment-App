@@ -42,7 +42,7 @@
         </div>
       </v-card-text>
     </v-card>
-    <v-dialog v-model="dialogVisible" max-width="600px">
+    <v-dialog v-model="dialogVisible" max-width="800px" max-heigth="500px">
       <v-card class="grey-background" v-if="selectedResolution !== null">
         <v-toolbar color="primary" density="compact">
           <v-card-title density="comfortable" color="primary" flat class="headline">{{ getDepartmentName(selectedResolution.department_id)  }} Department</v-card-title>
