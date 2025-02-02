@@ -54,7 +54,7 @@ function getAvatarIcon(label: any) {
   const circleSize = 50;
 
   // Générer les initiales à partir du label
-  const words = label.split(' ');
+  const words = Boolean(label) ? label.split(' ') : ['N', 'A'];
   const initials = words.map((word: any) => word.charAt(0).toUpperCase());
 
   // Créer un canvas et un contexte 2D
@@ -67,7 +67,7 @@ function getAvatarIcon(label: any) {
   }
 
   // Générer une couleur unique et légère pour l'avatar
-  const colorHash = label.split('').reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
+  const colorHash = (Boolean(label) ? label.split('') : ['N', 'A']).reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
   const hue = (colorHash % 360);
   const saturation = 80;
   const lightness = 70;
