@@ -19,36 +19,37 @@
                     <v-card-text>
                       <v-row>
                         <v-col cols="12" sm="6">
-                          <v-text-field variant="outlined" flat density="compact" v-model="localFault.name"
-                            label="Name" :rules="[validation.required]"></v-text-field>
+                          <v-text-field variant="outlined" flat density="compact" v-model="localFault.name" label="Name"
+                            :rules="[validation.required]"></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-select variant="outlined" flat density="compact" :items="assetList" v-model="localFault.vehicle_id"
-                            item-title="name" item-value="id" label="Select Vehicle" :rules="[validation.required]"></v-select>
+                          <SharedInputVehicleAutoCompleteInput variant="outlined" flat density="compact"
+                            v-model="localFault.vehicle_id" label="Select Vehicle" :rules="[validation.required]" />
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localFault.date_reported"
                             label="Date Reported" type="date" :rules="[validation.required]"></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-text-field variant="outlined" flat density="compact" v-model="localFault.fault_code" label="Fault Code"
-                          :rules="[validation.required]"></v-text-field>
+                          <v-text-field variant="outlined" flat density="compact" v-model="localFault.fault_code"
+                            label="Fault Code" :rules="[validation.required]"></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-select variant="outlined" flat density="compact" v-model="localFault.priority" :items="priorities"
-                            label="Priority" item-value="value" item-title="title" :rules="[validation.required]"></v-select>
+                          <v-select variant="outlined" flat density="compact" v-model="localFault.priority"
+                            :items="priorities" label="Priority" item-value="value" item-title="title"
+                            :rules="[validation.required]"></v-select>
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localFault.source"
                             label="Source" required></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-select variant="outlined" flat density="compact" v-model="localFault.status" :items="statuses"
-                            label="Status" item-value="value" item-title="title" required></v-select>
+                          <v-select variant="outlined" flat density="compact" v-model="localFault.status"
+                            :items="statuses" label="Status" item-value="value" item-title="title" required></v-select>
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-checkbox variant="outlined" flat density="compact" v-model="localFault.critical"
-                            label="Critical" required></v-checkbox>
+                            label="Critical" required :true-value="1" :false-value="0"></v-checkbox>
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -63,8 +64,8 @@
                 <v-card-text>
                   <v-row>
                     <v-col cols="12">
-                      <v-textarea variant="outlined" flat density="compact" v-model="localFault.description" label="Description"
-                        required></v-textarea>
+                      <v-textarea variant="outlined" flat density="compact" v-model="localFault.description"
+                        label="Description" required></v-textarea>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -72,7 +73,7 @@
             </v-col>
           </v-row>
 
-         
+
         </v-form>
       </v-card-text>
       <v-divider></v-divider>
@@ -102,7 +103,7 @@ const props = defineProps({
 });
 
 const assetStore = useAssetStore();
-const { assetList } = storeToRefs(assetStore);
+const { assetList, getAssetList } = storeToRefs(assetStore);
 
 const validation = useValidation();
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
@@ -160,16 +161,26 @@ const statuses = [
   {title: 'Ignored', value: 'ignored'}
 ];
 
-onMounted(() => {
-  assetStore.fetchAssets();
-})
+// onMounted(() => {
+//   assetStore.fetchAssets();
+// })
 
 watch(() => props.modelValue, (newValue) => {
-  if(newValue){
-    localFault.value.date_reported = new Date().toISOString().slice(0, 10);
-    localFault.value.status = 'open'
+  if (newValue) {
+    if (!props.fault || !props.fault.id) {
+      // Initialize values only for new fault creation
+      localFault.value.date_reported = new Date().toISOString().slice(0, 10);
+      localFault.value.status = 'open';
+    }
   }
-})
+});
+
+watch(() => localFault.value.vehicle_id, (newAssetId) => {
+  const selectedAsset = assetList.value.find(asset => asset.id === newAssetId);
+  if (selectedAsset) {
+    localFault.value.vehicle_name = selectedAsset.name;
+  }
+});
 </script>
 
 <style scoped></style>

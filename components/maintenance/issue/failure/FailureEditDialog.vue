@@ -19,19 +19,18 @@
                     <v-card-text>
                       <v-row>
                         <v-col cols="12" sm="6">
-                          <v-select variant="outlined" flat density="compact" :items="assetList"
-                            v-model="localFailure.vehicle_id" item-title="name" item-value="id" label="Select Vehicle"
-                            :rules="[validation.required]"></v-select>
+                          <SharedInputVehicleAutoCompleteInput variant="outlined" flat density="compact"
+                            v-model="localFailure.vehicle_id" label="Select Vehicle" :rules="[validation.required]" />
                         </v-col>
-                        <v-col cols="12" sm="6">
+                        <!-- <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localFailure.submission_date"
                             label="Submission Date" type="date"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
+                        </v-col> -->
+                        <!-- <v-col cols="12" sm="6">
                           <v-select variant="outlined" flat density="compact" :items="forms"
                             v-model="localFailure.inspection_form_id" item-title="name" item-value="id"
                             label="Select Form" :rules="[validation.required]"></v-select>
-                        </v-col>
+                        </v-col> -->
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localFailure.item_name"
                             label="Item Name" :rules="[validation.required]"></v-text-field>
@@ -43,49 +42,45 @@
                       </v-row>
                     </v-card-text>
                   </v-card>
-
-                  <v-card class="mt-3">
-                    <v-card-title class="font-weight-bold">Photos</v-card-title>
-                    <v-card-text>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-file-input v-model="localFailure.item_photos" :show-size="1000" color="primary"
-                            label="Pick An Photos" placeholder="Select your photo" prepend-icon="mdi-camera"
-                            variant="outlined" density="compact" counter multiple
-                            accept="image/png, image/jpeg, image/jpg, image/bmp">
-                            <template v-slot:selection="{ fileNames }">
-                              <template v-for="(fileName, index) in fileNames" :key="index">
-                                <v-chip v-if="index < 2" class="me-2" color="primary" size="small" label>
-                                  {{ fileName }}
-                                </v-chip>
-
-                                <span v-else-if="index === 2 && localFailure.item_photos"
-                                  class="text-overline text-grey-darken-3 mx-2">
-                                  +{{ localFailure.item_photos.length - 2 }} File(s)
-                                </span>
-                              </template>
-                            </template>
-                          </v-file-input>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                  </v-card>
                 </v-col>
               </v-row>
             </v-col>
 
             <v-col cols="12" md="6">
               <v-card>
-                <v-card-title class="font-weight-bold">Comment</v-card-title>
-                <v-card-text>
-                  <v-row>
-                    <v-col cols="12">
-                      <v-textarea variant="outlined" flat density="compact" v-model="localFailure.item_comments"
-                        label="Comments" required></v-textarea>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
+                    <v-card-title class="font-weight-bold d-flex">
+                      Photos <span v-if="localFailure.item_photos">({{ localFailure.item_photos?.length
+                        }})</span>
+                      <v-spacer></v-spacer>
+                      <v-btn color="primary" @click="addPhoto">
+                        <v-icon>mdi-plus</v-icon>
+                        <span class="ml-2" style="cursor: pointer;">Add Photos</span>
+                      </v-btn>
+                    </v-card-title>
+                    <v-card-text>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-card-text>
+                            <v-list v-if="localFailure.photos?.length">
+                              <template v-for="(photo, index) in localFailure.photos" :key="index">
+                                <v-list-item>
+                                  <v-list-item-title>{{ photo.name }}</v-list-item-title>
+                                  <template v-slot:append>
+                                    <v-btn variant="text" size="small" color="error" icon="mdi-delete"
+                                      @click.stop="removePhoto(index)">
+                                    </v-btn>
+                                  </template>
+                                </v-list-item>
+                                <v-divider v-if="index + 1 < localFailure.photos.length"></v-divider>
+                              </template>
+                            </v-list>
+                            <input ref="fileInput" type="file" multiple accept="image/*" @change="storeFile($event)"
+                              style="display: none;" />
+                          </v-card-text>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                  </v-card>
             </v-col>
           </v-row>
 
@@ -118,8 +113,8 @@ const props = defineProps({
 });
 
 const validation = useValidation();
-const assetStore = useAssetStore();
-const { assetList } = storeToRefs(assetStore);
+
+const mediaStore = useMediaStore();
 
 const inspectionFormStore = useInspectionFormStore();
 const { forms } = storeToRefs(inspectionFormStore);
@@ -151,6 +146,42 @@ const validateForm = async () => {
   return formStatus.valid ? true : false
 }
 
+const fileInput = ref<HTMLInputElement | null>(null);
+
+function addPhoto() {
+  fileInput.value?.click();
+}
+
+function removePhoto(index: number) {
+  localFailure.value.photos?.splice(index, 1);
+}
+
+async function storeFile(event: any) {
+  const files = (event.target as HTMLFormElement).files as FileList;
+
+  if (files.length === 0) {
+    return;
+  }
+
+  const fileArray = Array.from(files);
+
+  for (const file of fileArray) {
+    const { data, error } = await mediaStore.uploadFile(file);
+    if (data) {
+      if (!Array.isArray(localFailure.value.photos)) {
+        localFailure.value.photos = [];
+      }
+      // Add file data to photos array
+      localFailure.value.photos.push(data);
+
+    }
+  }
+
+  //clear input value
+  if (event.target) {
+    (event.target as HTMLFormElement).value = null
+  }
+}
 
 const saveFailure = async () => {
   // validate first window
@@ -175,8 +206,4 @@ const closeDialog = () => {
 
 const severities = ['Minor', 'Major', 'Critical'];
 
-onMounted(() => {
-  assetStore.fetchAssets();
-  inspectionFormStore.fetchForms()
-})
 </script>

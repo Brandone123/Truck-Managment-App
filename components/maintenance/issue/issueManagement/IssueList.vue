@@ -5,30 +5,55 @@
         <v-tab value="all" class="text-none">All</v-tab>
         <v-tab value="open" class="text-none">
           <span class="mr-1 bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></span>Open
-          <v-chip class="ml-1 bg-secondary" density="comfortable">{{ openCount }}</v-chip></v-tab>
-        <v-tab value="resolved" class="text-none">
-          <span class="mr-1 bg-primary" style="width: 8px; height: 8px; border-radius: 50%;"></span>Resolved
-          <v-chip class="ml-1 bg-primary" density="comfortable">{{ resolvedCount }}</v-chip></v-tab>
+          <v-chip class="ml-1 bg-secondary" density="comfortable">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ issueSummary?.open || 0 }}</span>
+          </v-chip></v-tab>
         <v-tab value="overdue" class="text-none">
           <span class="mr-1 bg-orange" style="width: 8px; height: 8px; border-radius: 50%;"></span>Overdue
-          <v-chip class="ml-1 bg-orange" density="comfortable">{{ overdueCount }}</v-chip></v-tab>
+          <v-chip class="ml-1 bg-orange" density="comfortable">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ issueSummary?.overdue || 0 }}</span>
+          </v-chip></v-tab>
+        <v-tab value="resolved" class="text-none">
+          <span class="mr-1 bg-primary" style="width: 8px; height: 8px; border-radius: 50%;"></span>Resolved
+          <v-chip class="ml-1 bg-primary" density="comfortable">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ issueSummary?.resolved || 0 }}</span>
+          </v-chip></v-tab>
         <v-tab value="closed" class="text-none">
           <span class="mr-1 bg-cyan" style="width: 8px; height: 8px; border-radius: 50%;"></span>Closed
-          <v-chip class="ml-1 bg-cyan" density="comfortable">{{ closedCount }}</v-chip></v-tab>
+          <v-chip class="ml-1 bg-cyan" density="comfortable">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ issueSummary?.closed || 0 }}</span>
+          </v-chip></v-tab>
       </v-tabs>
     </div>
 
-    <SharedUiCustomTable show-select items-per-page="50" :sticky-top="true" :sticky-top-offset="95"
-      :showFooterInHead="false" :headers="tableHeaders" :items="filteredIssues" :loading="loading">
-      <template v-slot:item.actions="{ item }">
-        <v-icon class="ml-2" color="primary" @click="$emit('view', item)">mdi-eye</v-icon>
-        <v-icon class="ml-2" color="primary" @click="$emit('edit', item)">mdi-pencil</v-icon>
-        <v-icon class="ml-2" color="red" @click="$emit('delete', item.id)">mdi-delete</v-icon>
-        <!-- <v-icon class="ml-2" color="secondary" @click="$emit('convert', item)">mdi-file-document</v-icon> -->
+    <SharedUiServerTable class="custom-table" show-select :sticky-top="true" :showFooterInHead="false"
+      :headers="tableHeaders" :items="filteredIssues" :loading="loading" :sticky-top-offset="94" :filters="filterAssets"
+      @update:selectedFilters="selectedFilters = $event" :selectable="true" v-model="selectedItems" return-object
+      :items-per-page="pagination.itemsPerPage" :sort-by="pagination.sortBy" :items-length="total_items"
+      @update:options="pagination = $event" @hoveredRow="hoveredRow = $event;">
+      <template v-slot:item.actions="{ item, index }">
+        <SharedTableActionMenu :hoveredRow="hoveredRow" :index="index">
+          <v-list-item @click="$emit('viewDetails', item.id)" append-icon="mdi-eye">View Details</v-list-item>
+          <v-list-item @click="$emit('edit', item)" append-icon="mdi-pencil">Edit</v-list-item>
+          <v-list-item @click="$emit('delete', item.id)" append-icon="mdi-delete">Delete</v-list-item>
+        </SharedTableActionMenu>
+      </template>
+      <template v-slot:bulkActions="{ selectedItems }" class="mr-2">
+        <v-btn v-if="canCreateWorkOrder" color="primary" class="text-none mr-2" @click="createWork(selectedItems[0])">
+          Create Work Order
+        </v-btn>
       </template>
       <template v-slot:item.id="{ item }">
-        <span class="text-secondary" v-bind="props" style="cursor: pointer; border-bottom: 1px dotted;"
-          @click="$emit('view', item)">
+        <span style="cursor: pointer; border-bottom: 1px dotted;" class="text-secondary font-weight-bold" dense
+          @click="$emit('viewDetails', item.id)">
           #{{ item.id }}
         </span>
       </template>
@@ -38,8 +63,10 @@
           :style="{ cursor: item.samsara_id != null ? 'pointer' : '' }">{{ item.source }}</div>
       </template>
 
-      <template v-slot:item.vehicle_id="{ item }">
-        <SharedTableVehicleItem type="id" :value="item.vehicle_id" />
+
+      <template v-slot:item.asset_name="{ item }">
+        <SharedTableDynamicVehicleItem :vehicle="item.asset" v-if="item.asset_name" />
+        <span v-else>N/A</span>
       </template>
 
       <template v-slot:item.status="{ item }">
@@ -47,66 +74,27 @@
           v-if="typeof item.status === 'string' && (item.status !== '1' && item.status !== '0')"
           :color="getStatusColor(item.status)">{{ item.status }}</v-chip>
       </template>
+      <template v-slot:item.issue="{ item }">
+        <span>{{ item.issue ? `#${item.issue}` : 'N/A' }}</span>
+      </template>
 
       <template v-slot:item.priority="{ item }">
-        <v-chip density="compact" v-if="item.priority" :color="getPriorityColor(item.priority)">{{ item.priority
-          }}</v-chip>
+        <v-chip class="text-capitalize" density="compact"
+          v-if="typeof item.priority === 'string' && (item.priority !== '1' && item.status !== '0')"
+          :color="getPriorityColor(item.priority)">{{ item.priority }}</v-chip>
         <span v-else></span>
       </template>
 
       <!-- Assignment -->
       <template v-slot:item.assigned_to="{ item }">
-        <SharedTableTechnicianItem v-if="item.assigned_to" :user-id="item.assigned_to" />
+        <SharedTableDynamicTechnicianItem v-if="item.assigned_to_user" :technician="item.assigned_to_user" />
+        <span v-else>N/A</span>
       </template>
 
       <template v-slot:item.watchers="{ item }">
-        <v-menu location="bottom" max-height="310px" width="320px" location-strategy="connected"
-          :close-on-content-click="true" class="rounded" open-on-hover>
-          <template v-slot:activator="{ props }">
-            <div v-if="item.watchers" v-bind="props" class="mr-2" style="cursor: pointer; border-bottom: 1px dotted;">
-              {{ item.watchers ? (item.watchers.length === 1 ? '1 watcher' : item.watchers.length + ' watchers') : '' }}
-            </div>
-          </template>
-          <v-row no-gutters>
-            <v-col cols="12">
-              <v-card class="rounded-lg">
-                <v-card-text>
-                  <div class="mb-3">
-                    <div v-if="authStore.user?.id !== item.watchers[0]">
-                      <div class="font-weight-bold text-h6">Not Watching</div>
-                      <span>
-                        You're not watching this record, so you will not receive any <b class="text-secondary">Watched
-                          Notifications</b> .
-                      </span>
-                      <div class="mt-4 mb-4">
-                        <span class="rounded pa-1 watch" style="border: 1px solid silver;cursor: pointer;">
-                          <v-icon style="font-size:medium">mdi-bell-outline</v-icon> Watch
-                        </span>
-                      </div>
-                    </div>
-                    <v-divider class="my-2"></v-divider>
-                    <span class="text-grey mt-3 mb-4">
-                      {{ item.watchers ? (item.watchers.length === 1 ? 'WATCHER: 1' : ' WATCHERS: ' +
-                        item.watchers.length ) : ''
-                      }}
-                    </span>
-                    <div v-for="(watcherId, index) in item.watchers" :key="index" v-if="item.watchers">
-                      <v-chip class="mb-2" variant="text"
-                        :prepend-avatar="getAvatarIcon(getTechnicianName(watcherId)?.full_name)">
-                        <span v-bind="props" class="text-secondary"
-                          style="cursor: pointer; border-bottom: 1px dotted;">{{
-                            getTechnicianName(watcherId)?.full_name ?
-                              getTechnicianName(watcherId)?.full_name : 'N/A' }}
-                        </span>
-                      </v-chip>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-menu>
+        <SharedTableDynamicWatcherItem :watchers="item.watching_employees" />
       </template>
+
       <template v-slot:item.reported_date="{ item }">
         <span style="cursor: pointer; border-bottom: 1px dotted; font-size: small">
           {{ new Date(item.reported_date).toLocaleDateString('en-US') }}
@@ -115,14 +103,22 @@
           </v-tooltip>
         </span>
       </template>
-    </SharedUiCustomTable>
+    </SharedUiServerTable>
   </div>
+  <WorkOrderEditDialog :modelValue="workOrderEditDialog" :workOrder="selectedWorkOrder"
+    :vehicleId="(selectedWorkOrder.vehicle_id as number)" @update:modelValue="workOrderEditDialog = $event"
+    @close="closeWorkOrderEditDialog" @save="saveWorkOrder" />
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import type { Issues } from '@/types/maintenance/issue';
 import type { filterItem } from '~/types/layout/table';
+import type { EmployeeInfo } from '~/types/store/employee';
+import WorkOrderEditDialog from "@/components/maintenance/management/workOrder/WorkOrderEditDialog.vue";
+import type { WorkOrder } from "~/types/maintenance/workOrder";
+import { useColor } from '@/composables/useColors';
+import moment from 'moment';
 
 const props = defineProps({
   issues: {
@@ -136,37 +132,28 @@ const props = defineProps({
 });
 
 const authStore = useAuthStore()
+const { getStatusColor, getPriorityColor } = useColor();
 
 const employeeStore = useEmployeeStore();
-const technicians = computed(() => employeeStore.getTechnicianList)
 
-const assetStore = useAssetStore();
-const { assetList } = storeToRefs(assetStore);
+const issueStore = useIssueStore();
+const { loadingSummary, issueSummary, total_items,
+  pagination: issuePagination, getIssuesList } = storeToRefs(issueStore);
 
 const activeFilter = ref<string>('all')
 
+const selectedItems = ref<Array<any>>([])
+const selectedFilters = ref<Record<string, string>>({})
+const hoveredRow = ref<number | null>(null)
+
 const filteredIssues = computed(() => {
-  if (activeFilter.value == 'all') {
-    return props.issues
+  if (activeFilter.value == "all") {
+    return getIssuesList.value;
   }
-  return props.issues.filter(item => item.status == activeFilter.value)
-})
-
-const closedCount = computed(() => {
-  return props.issues?.filter(item => item.status == 'closed')?.length || 0
-})
-
-const openCount = computed(() => {
-  return props.issues?.filter(item => item.status == 'open')?.length || 0
-})
-
-const overdueCount = computed(() => {
-  return props.issues?.filter(item => item.status == 'overdue')?.length || 0
-})
-
-const resolvedCount = computed(() => {
-  return props.issues?.filter(item => item.status == 'resolved')?.length || 0
-})
+  return getIssuesList.value.filter(
+    (item) => item.status == activeFilter.value
+  );
+});
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -177,85 +164,7 @@ const formatDate = (dateString: string) => {
 }
 
 const getRelativeDateTime = (dateString: any) => {
-  const now = new Date();
-  const createdAt = new Date(dateString);
-  const diff = now.getTime() - createdAt.getTime();
-
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  const months = Math.floor(days / 30);
-  const years = Math.floor(months / 12);
-
-  if (years > 0) {
-    return `${years} year${years > 1 ? 's' : ''}, ${months % 12} month${months % 12 > 1 ? 's' : ''} ago`;
-  } else if (months > 0) {
-    return `${months} month${months > 1 ? 's' : ''} ago`;
-  } else if (days > 0) {
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-  } else if (hours > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  } else if (minutes > 0) {
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  } else {
-    return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
-  }
-}
-
-function getAvatarIcon(label: any) {
-  const size = 50;
-  const circleSize = 50;
-
-  // Générer les initiales à partir du label
-  const words = label.split(' ');
-  const initials = words.map((word: any) => word.charAt(0).toUpperCase());
-
-  // Créer un canvas et un contexte 2D
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return '';
-  }
-
-  // Générer une couleur unique et légère pour l'avatar
-  const colorHash = label.split('').reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
-  const hue = (colorHash % 360);
-  const saturation = 80;
-  const lightness = 70;
-  const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-
-  // Dessiner le fond avec la couleur légère
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, circleSize / 2, 0, 2 * Math.PI);
-  ctx.fill();
-
-  // Dessiner les initiales en blanc
-  ctx.font = `${(circleSize * 0.6)}px Arial`;
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(initials.slice(0, 2).join(''), size / 2, size / 2);
-
-  return canvas.toDataURL();
-}
-
-
-
-const getStatusColor = (status: any) => {
-  switch ((status || '').toLowerCase()) {
-    case 'open':
-      return 'secondary';
-    case 'overdue':
-      return 'orange';
-    case 'closed':
-      return 'cyan';
-    case 'resolved':
-      return 'primary';
-  }
+  return moment(dateString).from(moment());
 }
 
 const openSamsaraIssue = (issue: any) => {
@@ -266,54 +175,136 @@ const openSamsaraIssue = (issue: any) => {
   }
 }
 
-const getPriorityColor = (status: any) => {
-  switch ((status || '').toLowerCase()) {
-    case 'low':
-      return 'grey';
-    case 'medium':
-      return 'orange';
-    case 'high':
-      return 'error';
-    case 'no priority':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-}
-
-
 const tableHeaders = [
   { title: 'Priority', key: 'priority' },
-  { title: 'Vehicle', key: 'vehicle_id' },
+  { title: 'Asset', key: 'asset_name' },
   { title: 'Issue', key: 'id' },
-  { title: 'Status', key: 'status' },
+  { title: 'Summary', key: 'summary' },
+  { title: 'Issue Status', key: 'status' },
   { title: 'Source', key: 'source' },
-  { title: 'Date Reported', key: 'reported_date' },
+  { title: 'Reported Date', key: 'reported_date' },
   { title: 'Assigned', key: 'assigned_to' },
+  // { title: 'Label', key: 'labels' },
+  // { title: 'Vehicle', key: 'vehicle_id' },
+  // { title: 'Priority', key: 'priority' },
   { title: 'Watchers', key: 'watchers' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: '', key: 'actions', sortable: false, minWidth: '50', align: 'end' },
 ];
 
-const getTechnicianName = (userId: any) => {
-  const technicianName = technicians.value.find((technician) => technician.user_id === userId)
-  return technicianName
+const selectedWorkOrder = ref<Partial<WorkOrder>>({} as Partial<WorkOrder>);
+const layoutStore = useLayoutStore()
+const workOrderEditDialog = ref(false);
+
+const canCreateWorkOrder = computed(() => {
+  if (selectedItems.value.length < 2) {
+    return false;
+  }
+  const vehicleIds = selectedItems.value.map(item => item.asset_name);
+  return new Set(vehicleIds).size === 1;
+});
+
+const closeWorkOrderEditDialog = () => {
+  workOrderEditDialog.value = false;
+};
+
+const saveWorkOrder = async (workOrder: any) => {
+  if (workOrder) {
+    issueStore.createWorkOrderFromIssues({ ...workOrder, issue_ids: selectedItems.value.map(item => item.id) })
+  }
+  workOrderEditDialog.value = false;
+  selectedItems.value = [];
 }
+
+const createWork = (vehicle: any) => {
+  selectedWorkOrder.value = {
+    vehicle_id: vehicle.asset_name,
+    date_created: new Date().toISOString().slice(0, 10),
+    status: 'Open',
+    created_by: authStore?.user?.id,
+    issue_ids: selectedItems.value.map(item => item.id)
+  };
+  workOrderEditDialog.value = true;
+};
 
 const filterAssets = computed(() => {
   return [
     {
       title: 'Status',
       key: 'status',
-      items: [{ text: 'Passed', value: 'passed' }, { text: 'Failed', value: 'failed' }, { text: 'Pending', value: 'pending' }],
+      items: [{ text: 'Open', value: 'open' },
+      { text: 'Close', value: 'closed' },
+      { text: 'Resolved', value: 'resolved' },
+      { text: 'Overdue', value: 'overdue' }],
       width: '300px',
     },
   ] as filterItem[]
 })
 
+
+const pagination = computed({
+  get() {
+    return issuePagination.value
+  },
+  set(value) {
+    issueStore.setPagination(value);
+  }
+})
+
+const searchQuery = computed(() => {
+  let payload: Record<string, any> = {
+    page: pagination.value.page,
+    items_per_page: pagination.value.itemsPerPage,
+  }
+
+  if (pagination.value.sortBy.length > 0) {
+    payload['sort_by'] = pagination.value.sortBy[0]
+  }
+
+  if (Boolean(pagination.value.search)) {
+    payload['search'] = pagination.value.search
+  }
+
+  payload['filters'] = {}
+
+  if (Object.keys(selectedFilters.value).length > 0) {
+    payload['filters'] = selectedFilters.value
+  }
+
+  if (activeFilter.value != 'all') {
+    payload['filters'].status = activeFilter.value
+  }
+
+  return payload
+})
+
+
 onMounted(() => {
-  employeeStore.fetchEmployeeList();
-  assetStore.fetchAssets();
+  issueStore.fetchIssues(searchQuery.value);
+})
+
+watch(() => selectedFilters.value, () => {
+  selectedItems.value = [];
+  issueStore.fetchIssues(searchQuery.value);
+}, { deep: true })
+
+watch(() => pagination.value, (newVal, oldVal) => {
+  if (!_isEqual(newVal, oldVal)) {
+    selectedItems.value = [];
+    issueStore.fetchIssues(searchQuery.value);
+  }
+}, { deep: true })
+
+watch(() => activeFilter.value, () => {
+  selectedItems.value = [];
+  issueStore.fetchIssues(searchQuery.value);
 })
 </script>
 
-<style scope></style>
+<style scoped>
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) th:last-child),
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) td:last-child) {
+  position: sticky;
+  right: 0;
+  width: 20px;
+}
+</style>

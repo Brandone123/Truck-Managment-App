@@ -8,7 +8,7 @@
               <span>Total Issues</span>
             </v-card-title>
             <v-card-text>
-              <span class="font-weight-bold text-h6"> {{ overviewData.totalIssues }}</span>
+              <span class="font-weight-bold text-h6"> {{ total_items }}</span>
             </v-card-text>
           </v-card-text>
         </v-card>
@@ -46,8 +46,8 @@
   
   <script lang="ts" setup>
   // import { useIssueStore } from '@/stores/maintenance/issueStore';
-  const store = useIssueTypeStore();
-  const { overviewData } = storeToRefs(store);
+  const issuestore = useIssueStore();
+  const { issueSummary, total_items } = storeToRefs(issuestore);
   </script>
   
   <style scoped>

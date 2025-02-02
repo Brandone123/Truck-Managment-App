@@ -24,8 +24,10 @@
                     <v-row>
                       <v-col cols="12" md="6">Status</v-col>
                       <v-col cols="12" md="6">
-                        <v-chip class="text-capitalize"  v-if="typeof issue.status === 'string' && (issue.status !== '1' && issue.status !== '0')" density="compact" variant="flat"
-                          :color="getStatusColor(issue.status as string)">{{ issue.status }}
+                        <v-chip class="text-capitalize"
+                          v-if="typeof issue.status === 'string' && (issue.status !== '1' && issue.status !== '0')"
+                          density="compact" variant="flat" :color="getStatusColor(issue.status as string)">{{
+                          issue.status }}
                         </v-chip>
                         <span v-else></span>
                       </v-col>
@@ -34,97 +36,7 @@
                     <v-row>
                       <v-col cols="12" md="6">Vehicle</v-col>
                       <v-col cols="12" md="6" class="text-secondary">
-                        <v-menu location="bottom" max-height="400px" width="350px" location-strategy="connected"
-                          :close-on-content-click="true" class="rounded" open-on-hover>
-                          <template v-slot:activator="{ props }">
-                            <div class="d-flex">
-                              <div class="rounded position-relative"
-                                style="display: flex; justify-content: center; align-items: center; width: 28px; height: 28px; background-color: grey; color: white; text-align: center; position: relative;">
-                                <span style="font-size:xx-small;" v-if="getVehicleName(issue.asset_name)?.type">{{
-                                  getVehicleName(issue.asset_name)?.type.slice(0, 3).toUpperCase() }}</span>
-                                <span v-else style="font-size:xx-small;">VHI</span>
-                                <div v-if="getVehicleName(issue.asset_name)?.status"
-                                  :class="`${'bg-' + getVehicleStatusColor(getVehicleName(issue.asset_name)?.status)}`"
-                                  style="width: 10px; height: 10px; position: absolute; bottom: -2px; right: -2px; border-radius: 50%;">
-                                </div>
-                              </div>
-                              <span class="ml-2">
-                                <span v-bind="props" style="cursor: pointer; border-bottom: 1px dotted;">{{
-                                  issue.asset_name }}</span>
-                              </span>
-                            </div>
-                          </template>
-
-                          <v-row no-gutters>
-                            <v-col cols="12">
-                              <v-card class="rounded-lg">
-                                <v-card-text>
-                                  <div class="mb-3">
-                                    <div class="d-flex mb-2"  style="align-items: center;">
-                                      <div>
-                                        <div class="rounded position-relative"
-                                          style="display: flex; justify-content: center; align-items: center; width: 45px; height: 45px; background-color: grey; color: white; text-align: center; position: relative;">
-                                          <span style="font-size: large;">{{
-                                            getVehicleName(issue.asset_name)?.type.slice(0, 3).toUpperCase() }}</span>
-                                        </div>
-                                      </div>
-                                      <div class="ml-2">
-                                        <span class="text-secondary" v-bind="props"
-                                          style="cursor: pointer; border-bottom: 1px dotted;">
-                                          {{ issue.asset_name }}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Status</v-col>
-                                      <v-col cols="12" md="6" v-if="getVehicleName(issue.asset_name)?.status">
-                                        <v-chip density="compact"
-                                          :color="getVehicleStatusColor(getVehicleName(issue.asset_name)?.status)">
-                                          {{ getVehicleName(issue.asset_name)?.status }}
-                                        </v-chip>
-                                      </v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Operator</v-col>
-                                      <v-col cols="12" md="6">{{ getVehicleName(issue.asset_name)?.odometer }}</v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Type</v-col>
-                                      <v-col cols="12" md="6">{{ getVehicleName(issue.asset_name)?.type }}</v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Year Make Model</v-col>
-                                      <v-col cols="12" md="6">
-                                        {{ getVehicleName(issue.asset_name)?.year }}
-                                        {{ getVehicleName(issue.asset_name)?.make }}
-                                        {{ getVehicleName(issue.asset_name)?.model }}
-                                      </v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Group</v-col>
-                                      <v-col cols="12" md="6" v-if="getVehicleName(issue.asset_name)?.dimensions">{{
-                                        getVehicleName(issue.asset_name)?.dimensions.ground_clearance }}</v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">VIN/SN</v-col>
-                                      <v-col cols="12" md="6">{{ getVehicleName(issue.asset_name)?.vin }}</v-col>
-                                    </v-row>
-                                    <v-divider class="my-2"></v-divider>
-                                    <v-row>
-                                      <v-col cols="12" md="6">Current Meter</v-col>
-                                      <v-col cols="12" md="6">{{ }}</v-col>
-                                    </v-row>
-                                  </div>
-                                </v-card-text>
-                              </v-card>
-                            </v-col>
-                          </v-row>
-                        </v-menu>
+                        <SharedTableDynamicVehicleItem :vehicle="issue.asset" />
                       </v-col>
                     </v-row>
                     <v-divider class="my-3"></v-divider>
@@ -136,24 +48,31 @@
                     <v-row>
                       <v-col cols="12" md="6">Reported Date</v-col>
                       <v-col cols="12" md="6">
-                      <span style="cursor: pointer; border-bottom: 1px dotted; font-size: small">
-                        {{formatReportedDate(issue.reported_date)}}
-                        <v-tooltip activator="parent" location="top" location-strategy="connected">
-                          {{ getRelativeDateTime(issue.reported_date) }}
-                        </v-tooltip>
-                      </span>
-                    </v-col>
+                        <span style="cursor: pointer; border-bottom: 1px dotted; font-size: small">
+                          {{ formatReportedDate(issue.reported_date) }}
+                          <v-tooltip activator="parent" location="top" location-strategy="connected">
+                            {{ getRelativeDateTime(issue.reported_date) }}
+                          </v-tooltip>
+                        </span>
+                      </v-col>
                     </v-row>
                     <v-divider class="my-3"></v-divider>
                     <v-row>
                       <v-col cols="12" md="6">Reported By</v-col>
                       <v-col cols="12" md="6">
-                        <v-menu v-if="issue.reported_by" 
-                          location="bottom" max-height="400px" width="350px" location-strategy="connected"
-                          :close-on-content-click="true" class="rounded" open-on-hover>
+                        <template v-slot:issue.reported_by="{ issue }">
+                          <SharedTableTechnicianItem v-if="issue.reported_by" :userId="issue.reported_by"
+                            v-bind="props" />
+                          <span v-else>N/A</span>
+                        </template>
+                        <!-- <v-menu v-if="issue.reported_by" location="bottom" max-height="400px" width="350px"
+                          location-strategy="connected" :close-on-content-click="true" class="rounded" open-on-hover>
                           <template v-slot:activator="{ props }">
-                            <v-chip variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(issue.reported_by)?.full_name)">
-                              <span v-bind="props" class="text-secondary" style="cursor: pointer; border-bottom: 1px dotted;">{{ getTechnicianName(issue.reported_by)?.full_name ?
+                            <v-chip variant="text"
+                              :prepend-avatar="getAvatarIcon(getTechnicianName(issue.reported_by)?.full_name)">
+                              <span v-bind="props" class="text-secondary"
+                                style="cursor: pointer; border-bottom: 1px dotted;">{{
+                                getTechnicianName(issue.reported_by)?.full_name ?
                                 getTechnicianName(issue.reported_by)?.full_name : 'N/A' }}</span>
                             </v-chip>
                             <br>
@@ -163,15 +82,18 @@
                               <v-card class="rounded-lg">
                                 <v-card-text>
                                   <div class="mb-3">
-                                    <v-chip class="mb-4" variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(issue.reported_by)?.full_name)">
-                                      <span v-bind="props" class="text-secondary">{{ getTechnicianName(issue.reported_by)?.full_name ?
+                                    <v-chip class="mb-4" variant="text"
+                                      :prepend-avatar="getAvatarIcon(getTechnicianName(issue.reported_by)?.full_name)">
+                                      <span v-bind="props" class="text-secondary">{{
+                                        getTechnicianName(issue.reported_by)?.full_name ?
                                         getTechnicianName(issue.reported_by)?.full_name : 'N/A' }}</span>
                                     </v-chip>
                                     <v-row>
                                       <v-col cols="12" md="6">Email</v-col>
                                       <v-col cols="12" md="6" v-if="getTechnicianName(issue.reported_by)?.email">
-                                        <span style="font-size: small">{{ getTechnicianName(issue.reported_by)?.email }}</span>
-                                        
+                                        <span style="font-size: small">{{ getTechnicianName(issue.reported_by)?.email
+                                          }}</span>
+
                                       </v-col>
                                     </v-row>
                                     <v-divider class="my-2"></v-divider>
@@ -183,19 +105,21 @@
                                     <v-divider class="my-2"></v-divider>
                                     <v-row>
                                       <v-col cols="12" md="6">Classification</v-col>
-                                      <v-col cols="12" md="6">{{ getTechnicianName(issue.reported_by)?.classification }}</v-col>
+                                      <v-col cols="12" md="6">{{ getTechnicianName(issue.reported_by)?.classification
+                                        }}</v-col>
                                     </v-row>
                                     <v-divider class="my-2"></v-divider>
                                     <v-row>
                                       <v-col cols="12" md="6">Phone</v-col>
-                                      <v-col cols="12" md="6">{{ getTechnicianName(issue.reported_by)?.mobile_phone }}</v-col>
+                                      <v-col cols="12" md="6">{{ getTechnicianName(issue.reported_by)?.mobile_phone
+                                        }}</v-col>
                                     </v-row>
                                   </div>
                                 </v-card-text>
                               </v-card>
                             </v-col>
                           </v-row>
-                        </v-menu>
+                        </v-menu> -->
                       </v-col>
                     </v-row>
                     <v-divider class="my-3"></v-divider>
@@ -208,7 +132,7 @@
                       <v-col cols="12" md="6">Priority</v-col>
                       <v-col cols="12" md="6"><v-chip density="compact" v-if="issue.priority"
                           :color="getPriorityColor(issue.priority as string)">{{
-                            issue.priority
+                          issue.priority
                           }}</v-chip>
                       </v-col>
                     </v-row>
@@ -221,12 +145,15 @@
                     <v-row>
                       <v-col cols="12" md="6">Assigned To</v-col>
                       <v-col cols="12" md="6">
-                        <v-menu v-for="(technicianId, index) in issue.assigned_to" :key="index" v-if="issue.assigned_to" 
+                        <v-menu v-for="(technicianId, index) in issue.assigned_to" :key="index" v-if="issue.assigned_to"
                           location="bottom" max-height="400px" width="350px" location-strategy="connected"
                           :close-on-content-click="true" class="rounded" open-on-hover>
                           <template v-slot:activator="{ props }">
-                            <v-chip variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(technicianId)?.full_name)">
-                              <span v-bind="props" class="text-secondary" style="cursor: pointer; border-bottom: 1px dotted;">{{ getTechnicianName(technicianId)?.full_name ?
+                            <v-chip variant="text"
+                              :prepend-avatar="getAvatarIcon(getTechnicianName(technicianId)?.full_name)">
+                              <span v-bind="props" class="text-secondary"
+                                style="cursor: pointer; border-bottom: 1px dotted;">{{
+                                getTechnicianName(technicianId)?.full_name ?
                                 getTechnicianName(technicianId)?.full_name : 'N/A' }}</span>
                             </v-chip>
                             <br>
@@ -236,15 +163,18 @@
                               <v-card class="rounded-lg">
                                 <v-card-text>
                                   <div class="mb-3">
-                                    <v-chip class="mb-4" variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(technicianId)?.full_name)">
-                                      <span v-bind="props" class="text-secondary">{{ getTechnicianName(technicianId)?.full_name ?
+                                    <v-chip class="mb-4" variant="text"
+                                      :prepend-avatar="getAvatarIcon(getTechnicianName(technicianId)?.full_name)">
+                                      <span v-bind="props" class="text-secondary">{{
+                                        getTechnicianName(technicianId)?.full_name ?
                                         getTechnicianName(technicianId)?.full_name : 'N/A' }}</span>
                                     </v-chip>
                                     <v-row>
                                       <v-col cols="12" md="6">Email</v-col>
                                       <v-col cols="12" md="6" v-if="getTechnicianName(technicianId)?.email">
-                                        <span style="font-size: small">{{ getTechnicianName(technicianId)?.email }}</span>
-                                        
+                                        <span style="font-size: small">{{ getTechnicianName(technicianId)?.email
+                                          }}</span>
+
                                       </v-col>
                                     </v-row>
                                     <v-divider class="my-2"></v-divider>
@@ -256,12 +186,14 @@
                                     <v-divider class="my-2"></v-divider>
                                     <v-row>
                                       <v-col cols="12" md="6">Classification</v-col>
-                                      <v-col cols="12" md="6">{{ getTechnicianName(technicianId)?.classification }}</v-col>
+                                      <v-col cols="12" md="6">{{ getTechnicianName(technicianId)?.classification
+                                        }}</v-col>
                                     </v-row>
                                     <v-divider class="my-2"></v-divider>
                                     <v-row>
                                       <v-col cols="12" md="6">Phone</v-col>
-                                      <v-col cols="12" md="6">{{ getTechnicianName(technicianId)?.mobile_phone }}</v-col>
+                                      <v-col cols="12" md="6">{{ getTechnicianName(technicianId)?.mobile_phone
+                                        }}</v-col>
                                     </v-row>
                                   </div>
                                 </v-card-text>
@@ -290,12 +222,18 @@
                     <v-row>
                       <v-col cols="12" md="6">Watchers</v-col>
                       <v-col cols="12" md="6">
+                        <template v-for="(watcher, index) in (issue.watching_employees || [])" :key="index">
+                          <SharedTableDynamicTechnicianItem v-if="watcher" :technician="watcher" />
+                        </template>
                         <v-menu location="bottom" max-height="310px" width="320px" location-strategy="connected"
                           :close-on-content-click="true" class="rounded" open-on-hover>
                           <template v-slot:activator="{ props }">
                             <div v-for="(watcherId, index) in issue.watchers" :key="index" v-if="issue.watchers">
-                              <v-chip variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(watcherId)?.full_name)">
-                                <span v-bind="props" class="text-secondary" style="cursor: pointer; border-bottom: 1px dotted;">{{ getTechnicianName(watcherId)?.full_name ?
+                              <v-chip variant="text"
+                                :prepend-avatar="getAvatarIcon(getTechnicianName(watcherId)?.full_name)">
+                                <span v-bind="props" class="text-secondary"
+                                  style="cursor: pointer; border-bottom: 1px dotted;">{{
+                                  getTechnicianName(watcherId)?.full_name ?
                                   getTechnicianName(watcherId)?.full_name : 'N/A' }}</span>
                               </v-chip>
                               <br>
@@ -305,16 +243,19 @@
                             <v-col cols="12">
                               <v-card class="rounded-lg">
                                 <v-card-text>
-                                  <div class="mb-3" v-for="(watcherId, index) in issue.watchers" :key="index" v-if="issue.watchers">
-                                    <v-chip class="mb-4" variant="text" :prepend-avatar="getAvatarIcon(getTechnicianName(watcherId)?.full_name)">
-                                      <span v-bind="props" class="text-secondary">{{ getTechnicianName(watcherId)?.full_name ?
+                                  <div class="mb-3" v-for="(watcherId, index) in issue.watchers" :key="index"
+                                    v-if="issue.watchers">
+                                    <v-chip class="mb-4" variant="text"
+                                      :prepend-avatar="getAvatarIcon(getTechnicianName(watcherId)?.full_name)">
+                                      <span v-bind="props" class="text-secondary">{{
+                                        getTechnicianName(watcherId)?.full_name ?
                                         getTechnicianName(watcherId)?.full_name : 'N/A' }}</span>
                                     </v-chip>
                                     <v-row>
                                       <v-col cols="12" md="6">Email</v-col>
                                       <v-col cols="12" md="6" v-if="getTechnicianName(watcherId)?.email">
                                         <span style="font-size: small">{{ getTechnicianName(watcherId)?.email }}</span>
-                                        
+
                                       </v-col>
                                     </v-row>
                                     <v-divider class="my-2"></v-divider>
@@ -374,7 +315,7 @@
                       <v-col cols="12" md="6">Miles to Resolve</v-col>
                       <v-col cols="12" md="6">
                         {{ issue.resolved_meter_variance ? issue.resolved_meter_variance + '/'
-                          + issue.resolved_meter_variance_unit : 'N/A' }}
+                        + issue.resolved_meter_variance_unit : 'N/A' }}
                       </v-col>
                     </v-row>
                   </v-card-text>
@@ -443,7 +384,8 @@
                               <v-card-text>
                                 <v-list-item-subtitle>{{ comment.date }}</v-list-item-subtitle>
                                 <v-list-item-subtitle>
-                                  <v-textarea :rows="2" v-model="comment.text" density="compact" variant="outlined" readonly>
+                                  <v-textarea :rows="2" v-model="comment.text" density="compact" variant="outlined"
+                                    readonly>
 
                                   </v-textarea>
                                 </v-list-item-subtitle>
@@ -455,45 +397,70 @@
                       <div v-else class="text-center">No Comments Yet</div>
                     </div>
                     <div style="position:sticky; bottom: 0;" class="px-2">
-                      <v-text-field v-model="newComment" @keydown.enter="saveComment" variant="outlined" placeholder="Add Comment"></v-text-field>
+                      <v-text-field v-model="newComment" @keydown.enter="saveComment" variant="outlined"
+                        placeholder="Add Comment"></v-text-field>
                     </div>
                   </v-sheet>
                 </v-window-item>
 
                 <!-- Photo Window -->
                 <v-window-item :value="2"
-                  style="position:relative;overflow-y:auto;height: calc(100vh - (48px + 60px));">
+                  style="position:relative; overflow-y:auto; height: calc(100vh - (48px + 60px));">
                   <v-sheet flat class="d-flex flex-column fill-height">
-                    <v-card-title>Photos <span v-if="issue.photos">({{ issue.photos.length }})</span></v-card-title>
-                    <div class="flex-grow-1">
-                      <v-list v-if="issue.photos">
-                        <!-- <v-list-subheader>New Photos ({{ issue.photos.length }})</v-list-subheader> -->
+                    <v-card-title>Photos
+                      <span v-if="(issue.photos || []).length > 0">({{ (issue.photos || []).length
+                        }})</span></v-card-title>
+                    <div class="flex-grow-1" style="overflow-x: hidden">
 
+                      <v-row v-if="(issue.photos || []).length > 0">
+                        <v-col cols="6" v-for="(photo, index) in issue.photos" :key="index">
+                          <v-card @click="showImage(index)">
+                            <v-img class="mx-auto" :src="photo.src" aspect-ratio="1/1" :alt="photo.name">
+                              <template v-slot:placeholder>
+                                <div class="d-flex align-center justify-center fill-height">
+                                  <v-progress-circular color="grey-lighten-4" indeterminate></v-progress-circular>
+                                </div>
+                              </template>
+                            </v-img>
+                          </v-card>
+                        </v-col>
+                        <template> </template>
+                      </v-row>
+
+                      <!-- <v-list v-if="issue.photos">
                         <template v-for="(photo, index) in issue.photos" :key="index">
                           <v-list-item class="d-flex align-items-center">
                             <v-img :src="photo.url" :alt="photo.name" class="mb-2" max-width="200"></v-img>
                             <v-list-item-title>{{ photo.name }}</v-list-item-title>
-                            <!-- <v-btn text size="small" color="error" icon="mdi-delete" @click="removeNewPhoto(index)">
-                            </v-btn> -->
+                            <v-btn text size="small" color="error" icon="mdi-delete" @click="removeNewPhoto(index)">
+                            </v-btn>
                           </v-list-item>
                           <v-divider v-if="index + 1 < issue.photos.length"></v-divider>
                         </template>
-                      </v-list>
+                      </v-list> -->
+
                       <div class="text-center" v-else>No Images Found</div>
                     </div>
                     <div style="position:sticky; bottom: 0;" class="px-2">
                       <!-- <WorkOrderCamera @savephoto="SavePhotos"/> -->
 
-                      <v-btn color="primary" class="mb-1">
+                      <!-- <v-btn color="primary" class="mb-1">
                         <v-icon>mdi-plus</v-icon>
                         <span class="ml-2" style="cursor: pointer;" @click="addPhoto">Add Photos</span>
-                      </v-btn>
+                      </v-btn> -->
 
                       <input ref="fileInput" type="file" multiple accept="image/*" @change="storeNewPhoto"
                         style="display: none;" />
                     </div>
                   </v-sheet>
                 </v-window-item>
+
+                <template>
+                  <ImagePreview :images="issue?.photos?.map(photo => photo.src)" :initialIndex="selectedIndex"
+                    :modelValue="ImagePreviewDialog" @update:modelValue="ImagePreviewDialog = $event"
+                    @close="closeImagePreview" />
+                </template>
+
 
                 <!-- Document Window -->
                 <v-window-item :value="3"
@@ -502,7 +469,8 @@
                     <v-card-title>Documents</v-card-title>
                     <div class="flex-grow-1">
                       <v-list v-if="issue.documents">
-                        <v-list-subheader v-if="issue.documents.length > 0">New Documents ({{ issue.documents.length }})</v-list-subheader>
+                        <v-list-subheader v-if="issue.documents.length > 0">New Documents ({{ issue.documents.length
+                          }})</v-list-subheader>
 
                         <template v-for="(document, index) in issue.documents" :key="index">
                           <v-list-item>
@@ -510,7 +478,8 @@
                               <a :href="document.url" target="_blank">{{ document.name }}</a>
                             </v-list-item-title>
                             <template v-slot:append>
-                              <v-btn text size="small" color="error" icon="mdi-delete" @click="removeNewDocument(index)">
+                              <v-btn text size="small" color="error" icon="mdi-delete"
+                                @click="removeNewDocument(index)">
                               </v-btn>
                             </template>
                           </v-list-item>
@@ -519,16 +488,18 @@
                       </v-list>
                       <div v-else class="text-center">No Documents</div>
                     </div>
-                    <div style="position:sticky; bottom: 0;" class="px-2">
+                    <!-- <div style="position:sticky; bottom: 0;" class="px-2">
                       <v-card-text>
                         <v-btn color="primary" class="mb-1" @click="addDocument">
                           <v-icon>mdi-plus</v-icon>
                           <span class="ml-2" style="cursor: pointer;">Add Documents</span>
                         </v-btn>
 
-                        <input ref="documentfile" type="file" multiple accept="application/pdf, application/msword, application/vnd.ms-excel" @change="storeNewDocument" style="display: none;" />
+                        <input ref="documentfile" type="file" multiple
+                          accept="application/pdf, application/msword, application/vnd.ms-excel"
+                          @change="storeNewDocument" style="display: none;" />
                       </v-card-text>
-                    </div>
+                    </div> -->
                   </v-sheet>
                 </v-window-item>
               </v-window>
@@ -583,7 +554,8 @@
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions>
-        <v-btn v-if="(issue.status||'').toLowerCase()  !== 'resolved'" color="primary" @click="resolveIssue">Resolve Issue</v-btn>
+        <v-btn v-if="(issue.status || '').toLowerCase() !== 'resolved'" color="primary" @click="resolveIssue">Resolve
+          Issue</v-btn>
         <v-btn color="primary" @click="createWork()">Create Work Order</v-btn>
         <v-spacer></v-spacer>
         <v-btn color="primary" @click="saveFIle(issue.id as number)">Save File</v-btn>
@@ -597,7 +569,8 @@
 import { ref } from 'vue';
 import type { Issues, ActivityLog } from '@/types/maintenance/issue';
 import { useRouter } from 'vue-router';
-import WorkOrderCamera from '@/components/maintenance/management/workOrder/components/WorkOrderCamera.vue';
+// import WorkOrderCamera from '@/components/maintenance/management/workOrder/components/WorkOrderCamera.vue';
+import ImagePreview from '~/components/shared/ImagePreview.vue';
 
 const router = useRouter();
 
@@ -626,6 +599,10 @@ const lastStep = ref(0)
 const emit = defineEmits(['update:modelValue', 'save']);
 
 const showAddEntryDialog = ref(false);
+
+const ImagePreviewDialog = ref(false);
+const selectedIndex = ref(0);
+
 
 const toggleButtonPress = () => {
   if (!showSidePanel) {
@@ -661,6 +638,8 @@ const toggleSidePanel = (stepVal: number) => {
 }
 const close = () => {
   emit('update:modelValue', false);
+  showSidePanel.value = false;
+  currentStep.value = 0;
 };
 
 const updateModelValue = (value: boolean) => {
@@ -687,7 +666,7 @@ const getVehicleName = (vehiclename: any) => {
 }
 
 const getVehicleStatusColor = (status: any) => {
-  switch ((status||'').toLowerCase() ) {
+  switch ((status || '').toLowerCase()) {
     case 'active':
       return 'primary';
     case 'Out of Service':
@@ -701,7 +680,7 @@ const getVehicleStatusColor = (status: any) => {
   }
 }
 
-const getRelativeDateTime = (dateString: any) =>{
+const getRelativeDateTime = (dateString: any) => {
   const now = new Date();
   const createdAt = new Date(dateString);
   const diff = now.getTime() - createdAt.getTime();
@@ -756,13 +735,24 @@ const resolveIssue = async () => {
   close();
 }
 
+function showImage(index: number) {
+  selectedIndex.value = index;
+  ImagePreviewDialog.value = true;
+}
+
+const closeImagePreview = () => {
+  ImagePreviewDialog.value = false;
+}
+
 const createWork = () => {
-  router.push({ path: '/maintenance/WorkOrders', query: {
-    vehicleName: getVehicleName(props.issue.asset_name)?.name, 
-    created_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-    status: 'Open',
-    action: 'createWorkOrder'
-  }})
+  router.push({
+    path: '/maintenance/WorkOrders', query: {
+      vehicleName: getVehicleName(props.issue.asset_name)?.name,
+      created_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      status: 'Open',
+      action: 'createWorkOrder'
+    }
+  })
 }
 
 const getStatusColor = (status: string) => {
@@ -806,7 +796,7 @@ function getAvatarIcon(label: any) {
   const circleSize = 50;
 
   // Générer les initiales à partir du label
-  const words = label.split(' ');
+  const words = Boolean(label) ? label.split(' ') : ['N', 'A'];
   const initials = words.map((word: any) => word.charAt(0).toUpperCase());
 
   // Créer un canvas et un contexte 2D
@@ -819,7 +809,7 @@ function getAvatarIcon(label: any) {
   }
 
   // Générer une couleur unique et légère pour l'avatar
-  const colorHash = label.split('').reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
+  const colorHash = (Boolean(label) ? label.split('') : ['N', 'A']).reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
   const hue = (colorHash % 360);
   const saturation = 80;
   const lightness = 70;
@@ -878,8 +868,8 @@ function SavePhotos(photo: { name: string, url: string }) {
 const fileInput = ref<HTMLInputElement | null>(null);
 
 function addPhoto() {
-  if(fileInput.value){
-     fileInput.value.click();
+  if (fileInput.value) {
+    fileInput.value.click();
   }
 }
 

@@ -1,7 +1,7 @@
 <template>
   <v-dialog :model-value="modelValue" @update:model-value="updateModelValue" scrollable fullscreen>
     <v-card class="grey-background">
-      <v-toolbar color="primary" dark>
+      <v-toolbar color="primary" dark density="compact">
         <v-toolbar-title>{{ title }}</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
@@ -19,26 +19,27 @@
                     <v-card-text>
                       <v-row>
                         <v-col cols="12" sm="6">
-                          <v-autocomplete variant="outlined" flat density="compact" v-model="localIssue.asset_name"
-                            label="Select Asset" :items="assetList" item-title="name" item-value="name"
-                            :rules="[validation.required]"></v-autocomplete>
+                          <SharedInputVehicleAutoCompleteInput variant="outlined" flat density="compact"
+                            v-model="localIssue.asset_name" item-value="name" label="Select Vehicle"
+                            :rules="[validation.required]" @selection="updateSelectedVehicle" />
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localIssue.reported_date"
                             label="Reported Date" type="datetime-local" :rules="[validation.required]"></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-text-field variant="outlined" flat density="compact" v-model="localIssue.meter"
-                            label="Primary Meter (mi)" type="number" required></v-text-field>
+                          <v-text-field :disabled="!localIssue.asset_name" variant="outlined" flat density="compact"
+                            v-model="localIssue.meter" label="Primary Meter (mi)" type="number" required></v-text-field>
                         </v-col>
+
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localIssue.due_meter"
                             label="Primary Meter Due (mi)" type="number" required></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-autocomplete variant="outlined" flat density="compact" v-model="localIssue.reported_by"
-                            :items="technicians" item-title="full_name" item-value="user_id" label="Reported By"
-                            :rules="[validation.required]"></v-autocomplete>
+                          <SharedInputEmployeeAutoCompleteInput :fetchData="false" variant="outlined" flat
+                            density="compact" :disabled="isUpdating" label="Reported By"
+                            v-model="localIssue.reported_by" :rules="[validation.required]" />
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-select variant="outlined" flat density="compact" v-model="localIssue.priority"
@@ -58,39 +59,18 @@
                   </v-card>
 
                   <v-card class="mt-3">
-                    <v-card-title class="font-weight-bold">Assignement</v-card-title>
+                    <v-card-title class="font-weight-bold">Assignment</v-card-title>
                     <v-card-text>
                       <v-row>
-                        <v-col cols="12" sm="6">
-                          <v-autocomplete v-model="localIssue.assigned_to" :disabled="isUpdating" :items="technicians"
-                            color="blue-grey-lighten-2" item-title="full_name" item-value="user_id"
-                            label="Assign Technician" chips closable-chips multiple density="compact"
-                            variant="outlined">
-                            <template v-slot:chip="{ props, item }">
-                              <v-chip v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 24, 18)"
-                                :text="item.raw.full_name"></v-chip>
-                            </template>
-
-                            <template v-slot:item="{ props, item }">
-                              <v-list-item v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 32, 24)"
-                                :subtitle="item.raw.job_title" :title="item.raw.full_name"></v-list-item>
-                            </template>
-                          </v-autocomplete>
+                        <v-col cols="12">
+                          <SharedInputTechnicianNameAutoCompleteInput :fetchData="false" variant="outlined" flat
+                            density="compact" label="Assign Technician" :disabled="isUpdating"
+                            v-model="localIssue.assigned_to" :rules="[validation.required]"/>
                         </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-autocomplete v-model="localIssue.watchers" :disabled="isUpdating" :items="technicians"
-                            color="blue-grey-lighten-2" item-title="full_name" item-value="user_id" label="Add Watchers"
-                            chips closable-chips multiple density="compact" variant="outlined">
-                            <template v-slot:chip="{ props, item }">
-                              <v-chip v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 24, 18)"
-                                :text="item.raw.full_name"></v-chip>
-                            </template>
-
-                            <template v-slot:item="{ props, item }">
-                              <v-list-item v-bind="props" :prepend-avatar="getAvatarIcon(item.raw.full_name, 32, 24)"
-                                :subtitle="item.raw.job_title" :title="item.raw.full_name"></v-list-item>
-                            </template>
-                          </v-autocomplete>
+                        <v-col cols="12">
+                          <SharedInputEmployeeAutoCompleteInput :fetchData="false" variant="outlined" flat
+                            density="compact" label="Add Watchers" :disabled="isUpdating" v-model="localIssue.watcher_ids"
+                            multiple />
                         </v-col>
                       </v-row>
                     </v-card-text>
@@ -124,7 +104,7 @@
                     </v-col>
                     <v-col cols="12">
                       <v-textarea variant="outlined" flat density="compact" v-model="localIssue.description"
-                        label="Description" required></v-textarea>
+                        label="Description"></v-textarea>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -134,47 +114,65 @@
           <v-row>
             <v-col cols="12" sm="6">
               <v-card>
-                <v-card-title class="font-weight-bold">Photos</v-card-title>
+                <v-card-title class="font-weight-bold d-flex">
+                  Photos <span v-if="localIssue.photos">({{ localIssue.photos?.length
+                    }})</span>
+                  <v-spacer></v-spacer>
+                  <v-btn color="primary" @click="addPhoto">
+                    <v-icon>mdi-plus</v-icon>
+                    <span class="ml-2" style="cursor: pointer;">Add Photos</span>
+                  </v-btn>
+                </v-card-title>
                 <v-card-text>
-                  <v-file-input v-model="localIssue.photos" :show-size="1000" color="primary" label="Pick An Photos"
-                    placeholder="Select your photo" prepend-icon="mdi-camera" variant="outlined" density="compact"
-                    counter multiple accept="image/png, image/jpeg, image/jpg, image/bmp">
-                    <template v-slot:selection="{ fileNames }">
-                      <template v-for="(fileName, index) in fileNames" :key="index">
-                        <v-chip v-if="index < 2" class="me-2" color="primary" size="small" label>
-                          {{ fileName }}
-                        </v-chip>
-
-                        <span v-else-if="index === 2 && localIssue.photos"
-                          class="text-overline text-grey-darken-3 mx-2">
-                          +{{ localIssue.photos.length - 2 }} File(s)
-                        </span>
-                      </template>
+                  <v-list v-if="localIssue.photos?.length">
+                    <template v-for="(photo, index) in localIssue.photos" :key="index">
+                      <v-list-item>
+                        <v-list-item-title>{{ photo.name }}</v-list-item-title>
+                        <template v-slot:append>
+                          <v-btn variant="text" size="small" color="error" icon="mdi-delete"
+                            @click.stop="removePhoto(index)">
+                          </v-btn>
+                        </template>
+                      </v-list-item>
+                      <v-divider v-if="index + 1 < localIssue.photos.length"></v-divider>
                     </template>
-                  </v-file-input>
+                  </v-list>
+                  <input ref="fileInput" type="file" multiple accept="image/*" @change="storeFile($event, 'photos')"
+                    style="display: none;" />
                 </v-card-text>
               </v-card>
             </v-col>
 
             <v-col cols="12" sm="6">
               <v-card>
-                <v-card-title class="font-weight-bold">Document</v-card-title>
+                <v-card-title class="font-weight-bold d-flex">
+                  Documents <span v-if="localIssue.documents">({{
+                    localIssue.documents?.length
+                  }})</span>
+                  <v-spacer></v-spacer>
+                  <v-btn color="primary" @click="addDocument">
+                    <v-icon>mdi-plus</v-icon>
+                    <span class="ml-2" style="cursor: pointer;">Add Documents</span>
+                  </v-btn>
+                </v-card-title>
                 <v-card-text>
-                  <v-file-input v-model="localIssue.documents" :show-size="1000" color="primary"
-                    label="Upload A Document" placeholder="Select your document" prepend-icon="mdi-paperclip"
-                    variant="outlined" density="compact" counter multiple>
-                    <template v-slot:selection="{ documentsName }">
-                      <template v-for="(document, index) in documentsName" :key="index">
-                        <v-chip v-if="index < 2" class="me-2" color="primary" size="small" label>
-                          {{ document }}
-                        </v-chip>
-                        <span v-else-if="index === 2 && localIssue.documents"
-                          class="text-overline text-grey-darken-3 mx-2">
-                          +{{ localIssue.documents.length - 2 }} File(s)
-                        </span>
-                      </template>
+                  <v-list v-if="localIssue.documents?.length">
+
+                    <template v-for="(document, index) in localIssue.documents" :key="index">
+                      <v-list-item>
+                        <v-list-item-title>{{ document.name }}</v-list-item-title>
+                        <template v-slot:append>
+                          <v-btn variant="text" size="small" color="error" icon="mdi-delete"
+                            @click.stop="removeDocument(index)">
+                          </v-btn>
+                        </template>
+                      </v-list-item>
+                      <v-divider v-if="index + 1 < localIssue.documents.length"></v-divider>
                     </template>
-                  </v-file-input>
+                  </v-list>
+                  <input ref="documentfile" type="file" multiple accept="application/pdf"
+                    @change="storeFile($event, 'documents')" style="display: none;" />
+
                 </v-card-text>
               </v-card>
             </v-col>
@@ -194,18 +192,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import type { Issues } from '@/types/maintenance/issue';
 import { useValidation } from '~/composables/formValidation';
 import { useRouter } from 'vue-router';
+import { isArray } from 'chart.js/helpers';
+import type { Asset } from '~/types/maintenance/assetTypes';
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true,
   },
-  vehicleId: {
-    type: Number,
+  vehicleName: {
+    type: String,
     required: true,
   },
   issue: {
@@ -214,6 +214,12 @@ const props = defineProps({
   },
 });
 
+const commonListStore = useMaintenanceCommonListStore()
+
+onMounted(() => {
+  commonListStore.fetchList('employees')
+})
+
 const authStore = useAuthStore()
 
 const router = useRouter();
@@ -221,7 +227,9 @@ const validation = useValidation();
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
 const issueFormForm = ref<HTMLFormElement | null>(null)
 
-const localIssue = ref<Partial<Issues>>(JSON.parse(JSON.stringify(props.issue || { photos: [] })));
+const mediaStore = useMediaStore()
+
+const localIssue = ref<Partial<Issues>>(JSON.parse(JSON.stringify(props.issue || {})));
 
 const assetStore = useAssetStore();
 const { assetList } = storeToRefs(assetStore);
@@ -230,12 +238,67 @@ const employeeStore = useEmployeeStore();
 const technicians = computed(() => employeeStore.getTechnicianList)
 
 const step = ref(1);
+
 const { modelValue, issue } = toRefs(props);
 
-// onMounted(() => {
-//   assetStore.fetchAssets();
-//   techniciansStore.fetchTechnicians();
-// })
+
+const fileInput = ref<HTMLInputElement | null>(null);
+
+
+function addPhoto() {
+  fileInput.value?.click();
+}
+
+function removePhoto(index: number) {
+  localIssue.value.photos?.splice(index, 1);
+}
+
+async function storeFile(event: any, location: string) {
+  const files = (event.target as HTMLFormElement).files as FileList;
+
+  if (files.length === 0) {
+    return;
+  }
+
+  const fileArray = Array.from(files);
+
+  for (const file of fileArray) {
+    const { data, error } = await mediaStore.uploadFile(file);
+    if (data) {
+      switch (location) {
+        case 'photos':
+          if (!Array.isArray(localIssue.value.photos)) {
+            localIssue.value.photos = [];
+          }
+          // Add file data to photos array
+          localIssue.value.photos.push(data);
+          break;
+        case 'documents':
+          if (!Array.isArray(localIssue.value.documents)) {
+            localIssue.value.documents = [];
+          }
+          // Add file data to documents array
+          localIssue.value.documents.push(data);
+          break;
+      }
+    }
+  }
+
+  //clear input value
+  if (event.target) {
+    (event.target as HTMLFormElement).value = null
+  }
+}
+
+const documentfile = ref<HTMLInputElement | null>(null);
+
+function addDocument() {
+  documentfile.value?.click();
+}
+
+function removeDocument(index: number) {
+  localIssue.value.documents?.splice(index, 1);
+}
 
 watch([modelValue, issue], ([newModelValue, newIssue]) => {
   if (newModelValue === false) {
@@ -252,7 +315,7 @@ const timeout = ref(null)
 
 function getAvatarIcon(label: any, size: any, circleSize: any) {
   // Générer les initiales à partir du label
-  const words = label.split(' ');
+  const words = Boolean(label) ? label.split(' ') : ['N', 'A'];
   const initials = words.map((word: string) => word.charAt(0).toUpperCase());
 
   // Créer un canvas et un contexte 2D
@@ -265,7 +328,7 @@ function getAvatarIcon(label: any, size: any, circleSize: any) {
   }
 
   // Générer une couleur unique pour l'avatar
-  const colorHash = label.split('').reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
+  const colorHash = (Boolean(label) ? label.split('') : ['N', 'A']).reduce((acc: number, char: string) => ((acc << 5) - acc) + char.charCodeAt(0), 0);
   const color = `#${(colorHash & 0xFFFFFF).toString(16).padStart(6, '0')}`;
 
   // Dessiner le fond avec la couleur unique
@@ -306,17 +369,13 @@ const nextWindow = async () => {
   }
 }
 
-function convertFilesToBlobs(files: File[]): Blob[] {
-  return files.map((file) => new Blob([file]));
-}
-
 const saveIssue = async () => {
   let validForm1 = await validateForm1()
   if (!validForm1) {
     return;
   }
 
-  emit('save', { ...localIssue.value, photos: localIssue.value.photos?.map((photo) => photo.name), documents: localIssue.value.documents?.map((document) => document.name) });
+  emit('save', localIssue.value);
   emit('update:modelValue', false);
   emit('close');
 };
@@ -355,29 +414,31 @@ const resetForm = () => {
   localIssue.value = {} as Partial<Issues>
 }
 
-const getVehicleName = (vehicleId: any) => {
-  const vehicleName = assetList.value.find((vehicle) => vehicle.id === vehicleId)
-  return vehicleName ? vehicleName.name : ''
-}
+// const getVehicleName = (vehicleName: any) => {
+//   const vehicleName = assetList.value.find((vehicle) => vehicle.id === vehicleName)
+//   return vehicleName ? vehicleName.name : ''
+// }
 
 // const getUserName = (userId: any) => {
 //   const useName = users.value.find((user) => user.id === userId)
 //   return useName ? useName.name : ''
 // }
 
+const vehicleMeter = ref()
+
 watch(() => props.modelValue, (newValue) => {
   if (router.currentRoute.value.path === '/maintenance/FailureManagement') {
-    localIssue.value.asset_name = getVehicleName(props.vehicleId)
+    localIssue.value.asset_name = props.vehicleName
   }
   if (router.currentRoute.value.path === '/maintenance/FaultManagement') {
-    localIssue.value.asset_name = getVehicleName(props.vehicleId)
+    localIssue.value.asset_name = props.vehicleName
   }
   if (router.currentRoute.value.path === '/maintenance/RecallManagement') {
-    localIssue.value.asset_name = getVehicleName(props.vehicleId)
+    localIssue.value.asset_name = props.vehicleName
   }
   if (router.currentRoute.value.path === '/maintenance/WorkOrders') {
-    if (props.vehicleId) {
-      localIssue.value.asset_name = getVehicleName(props.vehicleId)
+    if (props.vehicleName) {
+      localIssue.value.asset_name = props.vehicleName
     }
   }
   if (title.value === 'Create Issue') {
@@ -385,6 +446,20 @@ watch(() => props.modelValue, (newValue) => {
     localIssue.value.status = 'Open'
     localIssue.value.source = 'Manual Input'
     localIssue.value.priority = 'No Priority'
+    localIssue.value.reported_by = authStore.user?.id
   }
 })
+
+const updateSelectedVehicle = (asset: Asset) => {
+  vehicleMeter.value = asset.odometer;
+  if (title.value === 'Create Issue') {
+    localIssue.value.meter = vehicleMeter.value;
+  }
+}
+
+watch(() => localIssue.value.asset_name, (newAssetName) => {
+  if (newAssetName && title.value === 'Create Issue') {
+    localIssue.value.meter = (vehicleMeter.value as string);
+  }
+});
 </script>

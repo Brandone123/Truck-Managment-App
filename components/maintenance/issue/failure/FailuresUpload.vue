@@ -9,6 +9,8 @@
         </v-btn>
       </v-toolbar>
       <v-card-text>
+        <v-select v-model="selectedType" :items="importTypes" label="Select Import Type" variant="outlined"
+          prepend-icon="mdi-file-edit-outline"></v-select>
         <v-file-input v-model="files" label="Select CSV File" prepend-icon="mdi-cloud-upload-outline" variant="outlined"
           accept=".csv"></v-file-input>
       </v-card-text>
@@ -34,6 +36,11 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'imported']);
 
 const files = ref<File[]>([]);
+const selectedType = ref<string>('tms'); // Default value
+const importTypes = [
+  { title: 'Fleetio', value: 'fleetio' },
+  { title: 'TMS', value: 'tms' }
+];
 
 const failureStore = useFailureStore();
 const layoutStore = useLayoutStore();
@@ -49,7 +56,9 @@ const closeDialog = () => {
 const uploadFile = async () => {
   if (files.value.length > 0) {
     const formData = new FormData();
+
     formData.append('file', files.value[0]); // Select the first file
+    formData.append('importType', selectedType.value); // Append selected import type
 
     try {
       layoutStore.setOverlay(true);

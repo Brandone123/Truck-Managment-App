@@ -18,30 +18,33 @@
                     <v-card-title class="font-weight-bold">Details</v-card-title>
                     <v-card-text>
                       <v-row>
-                        <v-col cols="12" sm="4">
-                            <v-select variant="outlined" flat density="compact" :items="assetList" v-model="localRecall.vehicle_id"
-                            item-title="name" item-value="id" label="Select Vehicle" :rules="[validation.required]"></v-select>
+                        <v-col cols="12" sm="6">
+                          <!-- <v-select variant="outlined" flat density="compact" :items="assetList" v-model="localRecall.vehicle_id"
+                            item-title="name" item-value="id" label="Select Vehicle" :rules="[validation.required]"></v-select> -->
+                          <SharedInputVehicleAutoCompleteInput variant="outlined" flat density="compact"
+                            v-model="localRecall.vehicle_id" label="Select Vehicle" :rules="[validation.required]" />
                         </v-col>
-                        <v-col cols="12" sm="4">
+                        <!-- <v-col cols="12" sm="4">
                           <v-text-field variant="outlined" flat density="compact" v-model="localRecall.date"
                             label="Date of Recall" type="date" :rules="[validation.required]"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="4">
+                        </v-col> -->
+                        <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localRecall.issued_date"
-                            label="Issued Date" type="date" ></v-text-field>
+                            label="Issued Date" type="date"></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-text-field variant="outlined" flat density="compact" v-model="localRecall.manufacturer_campaign_number" 
-                          label="Manufacturer Campaign Number"
+                          <v-text-field variant="outlined" flat density="compact" v-model="localRecall.manufacturer"
+                            label="Manufacturer" required></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                          <v-text-field variant="outlined" flat density="compact"
+                            v-model="localRecall.nhtsa_campaign_number" label="NHTSA Campaign Number"
                             required></v-text-field>
                         </v-col>
                         <v-col cols="12" sm="6">
-                          <v-text-field variant="outlined" flat density="compact" v-model="localRecall.nhtsa_campaign_number"
-                            label="NHTSA Campaign Number" required></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-select variant="outlined" flat density="compact" v-model="localRecall.status" :items="statuses"
-                            label="Status" item-value="value" item-title="title" :rules="[validation.required]"></v-select>
+                          <v-select variant="outlined" flat density="compact" v-model="localRecall.status"
+                            :items="statuses" label="Status" item-value="value" item-title="title"
+                            :rules="[validation.required]"></v-select>
                         </v-col>
                         <v-col cols="12" sm="6">
                           <v-text-field variant="outlined" flat density="compact" v-model="localRecall.recall_year"
@@ -55,7 +58,7 @@
                           <v-text-field variant="outlined" flat density="compact" v-model="localRecall.recall_model"
                             label="Recall Model" required></v-text-field>
                         </v-col>
-                        
+
                         <v-col cols="12">
                           <v-textarea variant="outlined" flat density="compact" v-model="localRecall.notes"
                             label="Notes" required></v-textarea>
@@ -76,8 +79,8 @@
                         label="Safety Risk" :rows="3"></v-textarea>
                     </v-col>
                     <v-col cols="12">
-                      <v-textarea variant="outlined" flat density="compact" v-model="localRecall.remedy"
-                        label="Remedy" :rows="3"></v-textarea>
+                      <v-textarea variant="outlined" flat density="compact" v-model="localRecall.remedy" label="Remedy"
+                        :rows="3"></v-textarea>
                     </v-col>
                     <v-col cols="12">
                       <v-textarea variant="outlined" flat density="compact" v-model="localRecall.summary"
@@ -121,7 +124,7 @@ const { assetList } = storeToRefs(assetStore);
 const validation = useValidation();
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
 
-const localRecall =  ref<Partial<Recall>>(JSON.parse(JSON.stringify(props.recall || {})));
+const localRecall = ref<Partial<Recall>>(JSON.parse(JSON.stringify(props.recall || {})));
 
 watch(
   () => props.recall,
@@ -140,8 +143,8 @@ const validateForm1 = async () => {
 }
 
 const saveRecall = async () => {
-   // validate first window
-   let validForm1 = await validateForm1()
+  // validate first window
+  let validForm1 = await validateForm1()
   if (!validForm1) {
     return;
   }
@@ -161,19 +164,23 @@ const closeDialog = () => {
 };
 
 const statuses = [
-  {title: 'Needs Action', value: 'needs_action'},
-  {title:  'Open', value: 'open'},
-  {title: 'Resolved', value: 'resolved'}, 
-  {title: 'Acknowledged', value: 'acknowledged'}];
+  { title: 'Pending', value: 'pending' },
+  { title: 'Open', value: 'open' },
+  { title: 'Needs Action', value: 'needs action' },
+  { title: 'Resolved', value: 'resolved' },
+  { title: 'Acknowledged', value: 'acknowledged' }];
 
 onMounted(() => {
   // assetStore.fetchAssets();
 })
 
 watch(() => props.modelValue, (newValue) => {
-  if(newValue){
-    localRecall.value.date = new Date().toISOString().slice(0, 10);
-    localRecall.value.status = 'Open'
+  if (newValue) {
+    if (!props.recall || !props.recall.id) {
+      localRecall.value.date = new Date().toISOString().slice(0, 10);
+      localRecall.value.status = 'open'
+    }
+
   }
 })
 </script>
