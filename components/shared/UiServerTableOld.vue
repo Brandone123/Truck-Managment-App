@@ -10,7 +10,7 @@ import type { VDataTable } from 'vuetify/components'
 import { useFixedScrollbar } from '@/composables/fixedScrollbar';
 
 type Headers = InstanceType<typeof VDataTable>['headers']
-const emit = defineEmits(['update:selectedValue', 'hoveredRow']);
+const emit = defineEmits(['update:selectedValue', 'update:selectedFilters','update:modelValue']);
 
 interface SlotProps {
     [key: string]: any; // You can define more specific types for your props
@@ -59,25 +59,19 @@ const props = defineProps({
         default: true,
         required: false
     },
-    customFilter:{
-        type: Function,
-        default: null,
+    sortBy: {
+        type: Array,
+        default: [],
+        required: false,
+    },
+    modelValue: {
+        type: Array,
+        default: [],
+        required: false,
     }
 });
 
 const classname = ref(`table-${Math.random().toString(36).substring(2, 8)}`)
-
-const tableRows = ref<NodeListOf<HTMLTableRowElement> | null>(null);
-const listenerMap = new Map<Element, { mouseOver: EventListener; mouseLeave: EventListener }>();
-    const tableItems = ref<any[]>([])
-
-const mouseOver = (index: number) => {
-    emit('hoveredRow', index); // Set the hovered row index
-};
-
-const mouseLeave = () => {
-    emit('hoveredRow', null); // Reset hovered row index
-};
 
 // create custom sticky horizontal scrollbar in the custom table
 const { updateShowOverflowParent } = useFixedScrollbar({
@@ -95,20 +89,29 @@ const theme = useTheme();
 const primary = theme.current.value.colors.primary;
 
 // const instance = getCurrentInstance();
-// defineEmits(['selectedItems']);
-const selectedItems = ref([])
+// defineEmits(['bulkSelection']);
+// const bulkSelection = ref<any[]>(JSON.parse(JSON.stringify(props.selectedItems)))
+
+// watch(() => props.selectedItems, (newVal) => {
+//     bulkSelection.value = JSON.parse(JSON.stringify(newVal))
+// })
 
 // const isSticky = ref<boolean>(false);
+
+const bulkSelection = computed({
+    get(){
+        return props.modelValue
+    },
+    set(value){
+        emit('update:modelValue', value)
+    }
+})
 const search = ref<string>('');
 
 const searchField = ref<string>('');
 
-// const invalidSearchParam = computed(() => {
-//     return searchField.value.trim().length == 0
-// })
-
 const searchTable = () => {
-    search.value = (searchField.value || "").trim().toLowerCase();
+    search.value = (searchField.value || "").trim() //.toLowerCase();
 }
 
 //auto clear search parameters when search field is empty
@@ -129,45 +132,15 @@ const selectedDate = computed(() => {
     return new Date()
 })
 
-const filteredItems = computed(() => {
-    // if (!props.dateSelectorKey) {
-    //     return props.items
-    // }    
-    return props.items.filter((item: any) => {
-        let dateMatch = true
-        if (!!props.dateSelectorKey) {
-            // Check if the date key on item matches the selected date
-            let datePath = props.dateSelectorKey.split(".")
-            let dateItem = item
-            datePath.forEach(datePathItem => {
-                if (item && datePathItem in item) {
-                    dateItem = item[datePathItem]
-                }
-            })
-            // dateMatch = item[props.dateSelectorKey] == selectedDate
-            dateMatch = dateItem == selectedDate
+const updateFilters = () => {
+    let payload = JSON.parse(JSON.stringify(selectedFilterValues.value))
+    for (const key in payload) {
+        if (payload[key] === null || payload[key] === "") {
+            delete payload[key];
         }
-
-        return Object.entries(selectedFilterValues.value).every(([key, value]) => {
-            // Use the dynamic key and value to filter the array            
-            if (typeof key == 'string' && value != null) {
-                let path = key?.split('.')
-                let result = item
-                path?.forEach(pathItem => {
-                    if (result && pathItem in result) {
-                        result = result[pathItem]
-                    }
-                })
-                if (Array.isArray(value)) {
-                    return value.includes(result)
-                }
-                return result == value
-            }
-            return true
-            // return value != null ? item[key] === value : true
-        }) && dateMatch
-    })
-})
+    }
+    emit('update:selectedFilters', payload)
+}
 
 // const handleSticky = () => {
 //     const element = document.querySelector('.sticky-element thead tr') as HTMLElement | null;
@@ -178,7 +151,7 @@ const filteredItems = computed(() => {
 
 // const bulkSelection = () => {
 //     if (instance) {
-//         instance.emit('selectedItems', selectedItems.value)
+//         instance.emit('bulkSelection', bulkSelection.value)
 //     }
 // }
 
@@ -221,85 +194,22 @@ onUnmounted(() => {
     // window.removeEventListener('scroll', handleSticky);
 });
 
-defineExpose({
-    selectedItems
-})
-
-
-const addRowHoverListeners = () => {
-    nextTick(() => {
-        // Get all the rows in the table after rendering
-        tableRows.value = document.querySelectorAll('.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading)');
-
-        tableRows.value?.forEach((row, index) => {
-            // Create and store event listeners for this row
-            const mouseOverListener = () => mouseOver(index);
-            const mouseLeaveListener = mouseLeave;
-
-            listenerMap.set(row, { mouseOver: mouseOverListener, mouseLeave: mouseLeaveListener });
-
-            // Add mouse event listeners to the row
-            row.addEventListener('mouseover', mouseOverListener);
-            row.addEventListener('mouseleave', mouseLeaveListener);
-        });
-    });
-};
-
-const removeRowHoverListeners = () => {
-    // Remove mouse event listeners from each row
-    tableRows.value?.forEach((row) => {
-        const listeners = listenerMap.get(row);
-
-        if (listeners) {
-            row.removeEventListener('mouseover', listeners.mouseOver);
-            row.removeEventListener('mouseleave', listeners.mouseLeave);
-
-            // Remove the listener reference from the map
-            listenerMap.delete(row);
-        }
-    });
-
-    mouseLeave(); // Ensure hover state is reset
-};
-
-onMounted(() => {
-    removeRowHoverListeners()
-    addRowHoverListeners(); // Add listeners on initial mount for row hover listener
-});
-
-onUnmounted(() => {
-    removeRowHoverListeners()
-});
-
 const onRowClick = (event: any, item: any) => {
     //item.internalItem contains the clicked row
     // console.log(item) 
 }
 
-// onBeforeUnmount(() => {
-//     removeRowHoverListeners(); // Cleanup event listeners if needed
-// })
-
-watch(() => props.items, (newVal) => {
-    removeRowHoverListeners(); // Remove old listeners
-    nextTick(() => {
-        tableItems.value = newVal
-        addRowHoverListeners(); // Add new listeners
-    })
-
-}, { deep: true, immediate: true })
-
 </script>
 
 <template>
     <!-- <v-data-table :search="search" :hover="true" v-bind="{ ...$props, headers: filteredHeaders, items: filteredItems }" -->
-    <v-data-table @click:row="onRowClick" :search="search" v-model="selectedItems" :hover="true"
-        :headers="(filteredHeaders as Array<any>)" :items="tableItems as Array<any>" density="compact"
-        :class="classname" class="sticky-element" :loading="props.loading" :customFilter="(customFilter as any)">
-        
-        <!--  <template v-slot:loading>
-             <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
-         </template> -->
+    <v-data-table-server v-model="bulkSelection" @click:row="onRowClick" :search="search" :hover="true"
+        :headers="(filteredHeaders as Array<any>)" :items="items as Array<any>" density="compact" :class="classname"
+        class="sticky-element" :loading="props.loading" :sort-by="$props.sortBy">
+        <!-- 
+        <template v-slot:loading>
+            <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
+        </template> -->
 
         <template v-if="!$slots['top']" v-slot:top>
             <div class="top-content sticky-top" style="background-color: #EEEEEE" :style="stickyTopStyle">
@@ -309,7 +219,7 @@ watch(() => props.items, (newVal) => {
 
                         <!-- slot activated when items selected
                           -->
-                        <slot v-if="selectedItems.length" name="bulkActions" :selectedItems="selectedItems"></slot>
+                        <slot v-if="bulkSelection.length" name="bulkActions" :selectedItems="bulkSelection"></slot>
 
                         <!-- Define Filters In Parent Component -->
                         <slot v-else-if="$slots['filters']" name="filters"></slot>
@@ -318,33 +228,35 @@ watch(() => props.items, (newVal) => {
                         <template v-else-if="filters.length" v-for="filter in (filters as Array<filterItem>)">
                             <v-text-field v-if="typeof filter.type != 'undefined'" clearable flat class="mr-1"
                                 :type="filter.type" :label="filter.title" :style="{ width: filter.width || '150px' }"
-                                variant="solo" density="compact" hide-details
-                                v-model="selectedFilterValues[filter.key]" />
+                                variant="solo" density="compact" hide-details v-model="selectedFilterValues[filter.key]"
+                                @update:modelValue="updateFilters" />
 
                             <v-autocomplete v-else-if="typeof filter.items[0] == 'string'" clearable flat class="mr-1"
                                 :label="filter.title" :items="filter.items" :style="{ width: filter.width || '150px' }"
-                                variant="solo" density="compact" hide-details
-                                v-model="selectedFilterValues[filter.key]"></v-autocomplete>
+                                variant="solo" density="compact" hide-details v-model="selectedFilterValues[filter.key]"
+                                @update:modelValue="updateFilters"></v-autocomplete>
 
                             <v-autocomplete v-else clearable flat class="mr-1" :label="filter.title"
                                 :items="filter.items" :style="{ width: filter.width || '150px' }" variant="solo"
                                 density="compact" hide-details item-title="text" item-value="value"
-                                v-model="selectedFilterValues[filter.key]"></v-autocomplete>
+                                v-model="selectedFilterValues[filter.key]"
+                                @update:modelValue="updateFilters"></v-autocomplete>
                         </template>
                     </div>
 
                     <div v-if="searchable">
                         <v-text-field flat style="width:350px" clearable variant="solo" hide-details density="compact"
-                            v-model="searchField" placeholder="Search" @input="searchTable" :readonly="props.loading" @keydown.enter="searchTable">
-                            <!-- <template v-slot:append-inner>
+                            v-model="searchField" placeholder="Search">
+                            <template v-slot:append-inner>
                                 <v-btn flat color="primary" class="mr-n2"
                                     @click="searchTable"><v-icon>mdi-magnify</v-icon></v-btn>
-                            </template> -->
+                            </template>
                         </v-text-field>
                     </div>
                 </div>
                 <v-card class="rounded-0" flat style="width:100%" v-if="$props.showFooterInHead">
-                    <v-data-table-footer items-per-page-text="$vuetify.dataTable.itemsPerPageText">
+                    <v-data-table-footer items-per-page-text="$vuetify.dataTable.itemsPerPageText"
+                        :itemsPerPageOptions="[50, 100, 200]">
                         <template v-slot:prepend>
                             <div v-if="dateSelectorKey">
                                 <v-icon :color="primary">mdi-chevron-left</v-icon>
@@ -369,7 +281,8 @@ watch(() => props.items, (newVal) => {
         <template v-if="!$slots['bottom']" v-slot:bottom>
             <v-divider></v-divider>
             <v-card class="rounded-0" flat>
-                <v-data-table-footer items-per-page-text="$vuetify.dataTable.itemsPerPageText" />
+                <v-data-table-footer items-per-page-text="$vuetify.dataTable.itemsPerPageText"
+                    :itemsPerPageOptions="[50, 100, 200]" />
                 <v-divider></v-divider>
             </v-card>
         </template>
@@ -378,7 +291,7 @@ watch(() => props.items, (newVal) => {
         <template v-for="(_, slot) in $slots" v-slot:[slot]="slotProps">
             <slot :name="slot" v-bind="slotProps" v-if="slot && slot != 'loading'"></slot>
         </template>
-    </v-data-table>
+    </v-data-table-server>
 </template>
 
 
