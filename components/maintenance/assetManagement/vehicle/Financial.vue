@@ -1,6 +1,6 @@
 <template>
-    <v-col cols="12" sm="6">
-        <div>
+      <v-row >
+        <v-col :cols="showSidePanel ? 12 : 6">        <div>
             <v-card>
                 <v-card-title class="d-flex justify-space-between">
                     <span class="text-h7 font-weight-bold text-primary">Lifecycle Details</span>
@@ -141,7 +141,7 @@
         </div>
     </v-col>
 
-    <v-col cols="12" sm="6">
+    <v-col :cols="showSidePanel ? 12 : 6">
         <v-card>
             <v-card-title class="d-flex justify-space-between">
                 <span class="text-h7 font-weight-bold text-primary">Loan/Lease Details</span>
@@ -203,6 +203,7 @@
 
         </v-card>
     </v-col>
+    </v-row>
 </template>
 
 <script setup lang="ts">
@@ -219,7 +220,12 @@ const props = defineProps({
         type: Object as PropType<Asset>,
         require: true,
         default: {} as Asset
-    }
+    },
+    showSidePanel: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
 })
 
 const emit = defineEmits(['save'])

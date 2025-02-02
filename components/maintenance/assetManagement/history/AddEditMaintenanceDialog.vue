@@ -36,8 +36,8 @@
               </v-row>
             </v-window-item>
             <v-window-item :value="2">
-              <h3>Parts Used</h3>
-              <v-row v-for="(part, index) in localMaintenance.parts_used" :key="index">
+              <h3>Part Used</h3>
+              <v-row v-for="(part, index) in localMaintenance.Part_used" :key="index">
                 <v-col cols="3">
                   <v-text-field v-model="part.name" label="Part Name" variant="solo" flat
                     density="compact"></v-text-field>
@@ -107,7 +107,7 @@ const props = defineProps({
       date: '',
       technician: '',
       description: '',
-      parts_used: [],
+      Part_used: [],
       labor_cost: 0,
       total_cost: 0,
       status: 'Pending',
@@ -139,17 +139,17 @@ const closeDialog = () => {
 };
 
 const addPart = () => {
-  localMaintenance.value.parts_used.push({ name: '', quantity: 0, cost: 0 });
+  localMaintenance.value.Part_used.push({ name: '', quantity: 0, cost: 0 });
 };
 
 const removeItem = (index: number) => {
-  localMaintenance.value.parts_used.splice(index, 1);
+  localMaintenance.value.Part_used.splice(index, 1);
 };
 
 const updateTotals = () => {
   let subtotal = 0;
 
-  localMaintenance.value.parts_used.forEach((item: any) => {
+  localMaintenance.value.Part_used.forEach((item: any) => {
     let total = item.quantity * item.cost;
     subtotal += total
   });
@@ -162,7 +162,7 @@ const saveMaintenance = () => {
   emit('update:modelValue', false);
 };
 
-watch(() => localMaintenance.value.parts_used,
+watch(() => localMaintenance.value.Part_used,
   updateTotals,
   { deep: true }
 );

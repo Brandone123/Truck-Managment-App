@@ -18,9 +18,9 @@
 
 <script lang="ts" setup>
 import { defineProps, defineEmits } from 'vue';
-import type { ServiceEntry } from '@/types/maintenance/serviceHistory';
+import type { ServiceHistory } from '~/types/maintenance/serviceHistory';
 import { useServiceHistoryStore } from '@/stores/maintenance/useServiceHistoryStore';
-import ServiceEntryDetailsDialog from '@/components/maintenance/management/history/ServiceEntryDetailsDialog.vue';
+import ServiceEntryDetailsDialog from '~/components/maintenance/management/history/ServiceEntryDetailsDialog.vue';
 
 const serviceHistoryStore = useServiceHistoryStore();
   

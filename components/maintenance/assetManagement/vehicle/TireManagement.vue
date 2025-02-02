@@ -1,125 +1,204 @@
 <template>
-  <TireAddDialog :modelValue="TireDialog" :selectedTire="selectedTire" @update:modelValue="TireDialog = $event"
-    @close="closeTireDialog"/>
+  <!-- <TireAddDialog v-model="tireDialog" :selectedPosition="selectedPosition ?? undefined" :configuration="configuration"
+    :tirePlacement="tirePlacement" @save="installTire" /> -->
 
-    <v-col cols="12" sm="6">
-        <v-card height="400" style="overflow-y:auto;">
-            <div class="d-flex">
-                <div><v-card-title class="text-h7 font-weight-bold text-primary">Axle Configuration</v-card-title></div>
-                <div class="text-primary ml-auto mr-2 mt-3" style="font-size: 14px; cursor:pointer;">Edit</div>
-            </div>
+  <v-row>
+    <v-col :cols="showSidePanel ? 12 : 6">
+      <v-card style="overflow-y:auto;">
+        <v-card-title class="text-h7 font-weight-bold text-primary d-flex justify-space-between align-center">
+          <span>Axle Configuration</span>
+          <v-btn variant="text" density="compact" class="text-none" @click="axleConfigDialog = true"
+            color="primary">Edit</v-btn>
+        </v-card-title>
+        <AxleConfigSelectionDialog v-model="axleConfigDialog" :configuration="configuration"
+          @update:configuration="updateConfiguration" />
 
-            <div class="axle-configuration">
-              <div class="axle">
-                <h3>Front Axle</h3>
-                <div class="axle-icon-container">
-                  <div class="axle-connector">
-                      <div class="axle-icon" @click="addAxle('Left Front (LF)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      
-                      <div class="connector-line"></div>
-                  
-                      <!-- <v-divider style="border:2px"></v-divider> -->
-                      <div class="axle-icon" @click="addAxle('Right Front (RF)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                  </div>
-                </div>
-                
-              </div>
-
-              <div class="axle">
-                <h3>Axle 2</h3>
-                <div class="axle-icon-container">
-                  <div class="axle-connector">
-                      <div class="axle-icon" @click="addAxle('Left Outer (2LO)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      <div class="axle-icon" style="margin-left: 5px;" @click="addAxle('Left Inner (2LI)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-
-                      <div class="connector-line"></div>
-                      
-                      <div class="axle-icon" @click="addAxle('Right Inner (2RI)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      <div class="axle-icon" style="margin-left: 5px;" @click="addAxle('Right Outer (2RO)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="axle">
-                <h3>Axle 3</h3>
-                <div class="axle-icon-container">
-                  <div class="axle-connector">
-                      <div class="axle-icon" @click="addAxle('Left Outer (3LO)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      <div class="axle-icon" style="margin-left: 5px;" @click="addAxle('Left Inner (3LI)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      
-                      <div class="connector-line"></div>
-
-                      <div class="axle-icon" @click="addAxle('Right Inner (3RI)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                      <div class="axle-icon" style="margin-left: 5px;" @click="addAxle('Right Outer (3RO)')">
-                      <v-icon color="white">mdi-plus</v-icon>
-                      </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </v-card>
+        <v-card-text>
+          <div id="tireContainer" style="max-width:70%;margin:0 auto;"></div>
+          <div v-if="!selectedAsset.axle_configuration?.tireLayout?.length" class="d-flex text-center">Axle
+            configuration not setup</div>
+        </v-card-text>
+      </v-card>
     </v-col>
 
-    <v-col cols="12" sm="6">
-        <v-card height="330" style="overflow-y:auto;">
-            <div class="d-flex">
-                <div><v-card-title class="text-h7 font-weight-bold text-primary">Installed Tires
-                    </v-card-title></div>
-                <div class="text-primary ml-auto mr-2 mt-3" @click="addAxle('2LO')" style="font-size: 14px; cursor:pointer;">
-                    <v-icon>mdi-plus</v-icon>Add</div>
-            </div>
-            <div class="pa-4" style="font-size:small; color:grey; text-align: center;">
-              <span><v-icon size="150">mdi-tire</v-icon></span>
-                <p>There are no tires installed on this vehicle yet.</p>
-            </div>
-        </v-card>
+    <v-col :cols="showSidePanel ? 12 : 6">
+      <v-card style="overflow-y:auto;">
+        <div class=" px-3 pt-3 d-flex justify-space-between">
+          <span class="text-h6 font-weight-bold text-primary">Installed Tires
+          </span>
+          <span>
+            <!-- <v-menu offset-y close-on-content-click>
+              <template v-slot:activator="{ props }">
+                <v-btn color="primary" v-bind="props" class="custom-button" variant="outlined" density="comfortable">
+                  <v-icon>mdi-dots-horizontal</v-icon>
+                </v-btn>
+              </template>
+<v-list density="compact">
+  <v-list-item @click="" append-icon="mdi-tire">Rotate</v-list-item>
+  <v-list-item @click="removeAllTires" append-icon="mdi-delete">Remove All</v-list-item>
+</v-list>
+</v-menu> -->
+
+            <!-- <v-btn :disabled="!selectedAsset?.axle_configuration?.tireLayout" density="comfortable" variant="outlined"
+              class="text-primary ml-2" @click="addAxle()">
+              <v-icon>mdi-plus</v-icon>Add
+            </v-btn> -->
+          </span>
+        </div>
+        <template v-if="selectedAsset.tires" v-for="(tire, i) in selectedAsset.tires ?? []" :key="i">
+          <InstalledTire :tire="tire" />
+          <v-divider v-if="i < selectedAsset.tires.length - 1"></v-divider>
+        </template>
+        <div v-else class="pa-4" style="font-size:small; color:grey; text-align: center;">
+          <span><v-icon size="150">mdi-tire</v-icon></span>
+          <p>There are no tires installed on this vehicle yet.</p>
+        </div>
+      </v-card>
     </v-col>
+  </v-row>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, defineProps, onBeforeMount } from 'vue';
 import TireAddDialog from './TireAddDialog.vue'
+import AxleConfigSelectionDialog from './AxleConfigSelectionDialog.vue';
+import { storeToRefs } from 'pinia';
+import type { Tire, TireInstallation } from '~/types/maintenance/tireTypes';
+import TireLayoutManager from '~/utils/tireManager';
+import InstalledTire from './components/InstalledTire.vue';
+import { useTheme } from 'vuetify'
 
-const addAxle = (axlePosition: any) => {
-    // Logique pour ajouter un nouvel essieu à la position donnée
-    TireDialog.value = true;
-    selectedTire.value.selectedPosition = axlePosition
+const vTheme = useTheme()
+const primaryColor = vTheme.current.value.colors.primary
+
+const props = defineProps({
+  showSidePanel: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
+
+});
+
+const layoutStore = useLayoutStore()
+const tireStore = useTireStore()
+
+const tireLayoutManager = ref<any>(null)
+
+const assetStore = useAssetStore()
+const { selectedAsset } = storeToRefs(assetStore)
+
+
+const tireDialog = ref(false);
+const selectedPosition = ref<string | null>(null);
+
+const configuration = computed({
+  get() {
+    return selectedAsset.value?.axle_configuration //?? { tireLayout: '', axles: {} }
+  },
+  set(val) {
+    assetStore.updateAsset({ id: selectedAsset.value.id, axle_configuration: val })
+    assetStore.fetchAssetById(selectedAsset.value.id as number)
+  }
+})
+
+const tirePlacement = computed(() => {
+  let tires: Record<string, any> = {}
+  if (selectedAsset.value?.tires?.length) {
+    selectedAsset.value?.tires.forEach((tire: any) => {
+      tires[tire.current_installation?.position] = { tirePressure: tire.current_installation?.pressure, threadDepth: tire.current_installation?.tread_depth }
+    })
+  }
+  return tires
+})
+
+const axleConfigDialog = ref<boolean>(false)
+
+const installTire = async (tire: any) => {
+  let payload = { ...tire } as any
+  if (payload.installation) {
+    payload.installation.vehicle_id = selectedAsset.value.id
+    payload.vehicle_id = selectedAsset.value.id
+  }
+
+  tireStore.createTire(payload as Tire)
+  assetStore.fetchAssetById(selectedAsset.value.id as number)
+}
+
+const updateConfiguration = (value: Record<string, any>) => {
+  //save configuration
+  configuration.value = value as any
+}
+
+const removeAllTires = async () => {
+  const { confirm, cancel } = await layoutStore.showConfirmDialog(
+    "Proceed to remove all tires from vehicle ?"
+  );
+
+  if (confirm) {
+    // emit('delete', id)
+  }
+}
+const setTireLayout = () => {
+  if (tireLayoutManager.value) {
+    tireLayoutManager.value?.updateConfig({
+      containerId: 'tireContainer',
+      tireLayout: configuration.value!.tireLayout as any,
+      defaultColor: primaryColor,
+      tirePlacement: tirePlacement.value,
+      axleConfiguration: configuration.value!.axles as any || {},
+      onZoneClick: (zoneId: string) => {
+        // addAxle(zoneId)
+      },
+      onAxleUpdate: (axleId: string, data: string) => {
+      },
+      onTireClick(zoneId: string, data: any) {
+        // addAxle(zoneId, data)
+      }
+    })
+  } else {
+    tireLayoutManager.value = new TireLayoutManager({
+      containerId: 'tireContainer',
+      tireLayout: configuration.value?.tireLayout as any,
+      defaultColor: primaryColor,
+      tirePlacement: tirePlacement.value,
+      axleConfiguration: configuration.value!.axles as any || {},
+      onZoneClick: (zoneId: string) => {
+        // addAxle(zoneId)
+      },
+      onAxleUpdate: (axleId: string, data: string) => {
+      },
+      onTireClick(zoneId: string, data: any) {
+        // addAxle(zoneId, data)
+      }
+    })
+  }
+}
+watch(() => configuration.value, (newVal) => {
+  if (newVal?.tireLayout?.length) {
+    setTireLayout()
+  }
+}, { deep: true })
+
+onMounted(() => {
+  if (configuration.value?.tireLayout?.length) {
+    setTireLayout()
+  }
+})
+
+
+
+const addAxle = (axlePosition: any = null, axleData: any = {}) => {
+  selectedPosition.value = axlePosition
+  tireDialog.value = true;
 };
 
-const TireDialog = ref(false);
-const selectedTire = ref({
-    selectedTireModel: '',
-    newTire: true,
-    usedTire: false,
-    tireMeter: 0,
-    selectedAxle: [],
-    selectedPosition: [],
-    treadDepth: 0,
-    pressure: 0,
-    
-  });
-
-  const closeTireDialog = () => {
-    TireDialog.value = false;
-  };
+onBeforeUnmount(() => {
+  if (tireLayoutManager.value) {
+    tireLayoutManager.value.clear()
+    tireLayoutManager.value = null;
+  }
+})
 
 </script>
 
@@ -164,7 +243,7 @@ const selectedTire = ref({
 }
 
 .axle-connector {
-  position:relative;
+  position: relative;
   bottom: -20px;
   width: 100%;
   display: flex;
@@ -176,5 +255,11 @@ const selectedTire = ref({
   height: 10px;
   margin-top: 35px;
   background-color: #c0c0c0;
+}
+
+/* Optional styling */
+.custom-button {
+  min-width: 0;
+  width: 20px;
 }
 </style>

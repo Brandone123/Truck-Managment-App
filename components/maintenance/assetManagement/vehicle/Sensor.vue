@@ -1,6 +1,6 @@
 <template>
-    <v-col cols="12" sm="3"> 
-        <div>
+      <v-row >
+        <v-col :cols="showSidePanel ? 12 : 6">
             <v-card height="300">
                 <div class="d-flex">
                     <span>
@@ -13,10 +13,9 @@
                     <p>No Sensor Data Snapshots found</p>
                 </div>
             </v-card>
-        </div>
     </v-col>
 
-    <v-col cols="12" sm="9">
+    <v-col :cols="showSidePanel ? 12 : 6">
         <v-card height="200" style="overflow-y:auto;">
             <div class="pa-4">
                 <p style="font-size:small; color:grey; text-align: center;">
@@ -26,11 +25,18 @@
            
         </v-card>
     </v-col>
+    </v-row>
   </template>
   
   <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue';
+  import {defineProps } from 'vue';
   import 'apexcharts/dist/apexcharts.css';
-  
+  const props = defineProps({
+  showSidePanel: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
+});
 
   </script>

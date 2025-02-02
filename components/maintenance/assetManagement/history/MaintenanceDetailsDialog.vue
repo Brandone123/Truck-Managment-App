@@ -45,7 +45,7 @@
           </div>
           <!-- <p><strong>Description of Work:</strong> {{ maintenance.description }}</p> -->
           <v-divider></v-divider>
-          <h4 class="mt-3 ml-3">Parts Used</h4>
+          <h4 class="mt-3 ml-3">Part Used</h4>
           <v-table>
             <thead>
               <tr>
@@ -55,7 +55,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="part in maintenance.parts_used" :key="part.name">
+              <tr v-for="part in maintenance.Part_used" :key="part.name">
                 <td>{{ part.name }}</td>
                 <td>{{ part.quantity }}</td>
                 <td>${{ part.cost }}</td>

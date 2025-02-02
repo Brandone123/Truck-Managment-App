@@ -9,7 +9,10 @@
         </v-btn>
       </v-toolbar>
       <v-card-text>
-        <v-file-input color="primary" variant="outlined" v-model="files" label="Select CSV File" prepend-icon="mdi-cloud-upload-outline" accept=".csv"></v-file-input>
+        <v-select v-model="selectedType" :items="importTypes" label="Select Import Type" variant="outlined"
+          prepend-icon="mdi-file-edit-outline"></v-select>
+        <v-file-input color="primary" variant="outlined" v-model="files" label="Select CSV File"
+          prepend-icon="mdi-cloud-upload-outline" accept=".csv"></v-file-input>
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions>
@@ -31,9 +34,14 @@ const props = defineProps({
   modelValue: Boolean,
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'imported']);
 
 const files = ref<File[]>([]);
+const selectedType = ref<string>('tms'); // Default value
+const importTypes = [
+  { title: 'Fleetio', value: 'fleetio' },
+  { title: 'TMS', value: 'tms' }
+];
 
 const assetStore = useAssetStore();
 const layoutStore = useLayoutStore();
@@ -50,9 +58,7 @@ const uploadFile = async () => {
   if (files.value.length > 0) {
     const formData = new FormData();
     formData.append('file', files.value[0]); // Select the first file
-
-    // Log the file data to the console
-    console.log('File to be uploaded:', files.value[0]);
+    formData.append('importType', selectedType.value);
 
     // Read the file content as text and log it (for debugging)
     const reader = new FileReader();

@@ -1,6 +1,6 @@
 <template>
-    <v-col cols="12" sm="6">
-        <div>
+      <v-row >
+        <v-col :cols="showSidePanel ? 12 : 6">      
             <v-card class="d-flex flex-column" height="300">
                 <v-card-title class="d-flex justify-space-between "
                     style="position:sticky;top:0;z-index:1;background:white;">
@@ -57,7 +57,6 @@
                     </v-form>
                 </v-card-text>
             </v-card>
-        </div>
 
         <v-card class="mt-3">
             <v-card-title class="d-flex justify-space-between">
@@ -161,7 +160,7 @@
         </v-card>
     </v-col>
 
-    <v-col cols="12" sm="6">
+    <v-col :cols="showSidePanel ? 12 : 6">
         <v-card class="d-flex flex-column" height="300">
             <v-card-title class="d-flex justify-space-between "
                 style="position:sticky;top:0;z-index:1;background:white;">
@@ -286,10 +285,11 @@
 
         </v-card>
     </v-col>
+    </v-row>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref} from 'vue';
 import 'apexcharts/dist/apexcharts.css';
 import type { Asset, Dimensions, Weight, Peformance, FuelEconomy, Engine, Transmission, WheelsAndTires } from '~/types/maintenance/assetTypes';
 import { useValidation } from '~/composables/formValidation';
@@ -301,7 +301,12 @@ const props = defineProps({
         type: Object as PropType<Asset>,
         require: true,
         default: {} as Asset
-    }
+    },
+    showSidePanel: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
 })
 
 const emit = defineEmits(['save'])

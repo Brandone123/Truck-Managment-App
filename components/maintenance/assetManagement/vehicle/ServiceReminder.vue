@@ -30,7 +30,7 @@
   <script lang="ts" setup>
   import { defineProps, defineEmits, ref, computed } from 'vue';
   import { useServiceReminderStore } from '@/stores/maintenance/serviceReminders';
-  import ServiceReminderDetailsDialog from '@/components/maintenance/management/reminder/ServiceReminderDetailsDialog.vue';
+  import ServiceReminderDetailsDialog from '~/components/maintenance/serviceReminders/ServiceReminderDetailsDialog.vue';
   
   const serviceReminderStore = useServiceReminderStore();
   const { serviceReminderList, loading } = storeToRefs(serviceReminderStore);

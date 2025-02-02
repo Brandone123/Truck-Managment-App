@@ -1,14 +1,13 @@
 <template>
-    <v-col cols="12" sm="4"> 
-        <div>
+      <v-row >
+        <v-col :cols="showSidePanel ? 12 : 6">
             <v-card height="400">
                 <v-calendar></v-calendar>
             </v-card>
-        </div>
     </v-col>
 
-    <v-col cols="12" sm="8">
-        <v-card height="330" style="overflow-y:auto;">
+    <v-col :cols="showSidePanel ? 12 : 6">
+      <v-card height="330" style="overflow-y:auto;">
             <div class="d-flex">
                 <div><v-card-title class="text-h7 font-weight-bold text-primary">Telematics</v-card-title></div>
             </div>
@@ -19,12 +18,20 @@
            
         </v-card>
     </v-col>
+    </v-row>
   </template>
   
   <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, defineProps } from 'vue';
   import 'apexcharts/dist/apexcharts.css';
 
+  const props = defineProps({
+  showSidePanel: {
+    type: Boolean,
+    required: false,
+    default: false
+  }
+});
   const telematicChart = computed(() => {
     return {
       chartOptions: {

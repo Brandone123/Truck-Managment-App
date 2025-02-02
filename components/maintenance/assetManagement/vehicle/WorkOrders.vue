@@ -18,7 +18,6 @@
   
   <script lang="ts" setup>
   import { ref, computed } from 'vue';
-  import type { WorkOrder } from '@/types/maintenance/workOrder';
   import type { filterItem } from '~/types/layout/table';
   import WorkOrderDetailsDialog from '@/components/maintenance/management/workOrder/WorkOrderDetailsDialog.vue';
   
