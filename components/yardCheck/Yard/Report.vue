@@ -19,13 +19,13 @@ const filterdYardList = computed(() => {
     return yardList.value
 })
 
-const selectedYard = ref<YardInfo | null>(null);
+const selectedYard = ref<YardInfo | null>(null); //creating a state of type YardInfo
 
 const currentY = ref(10)
 const currentX = ref(10)
 
 // // Create a new PDF document
-const doc = ref<jsPDF | null>(null );
+const doc = ref<jsPDF | null>(null ); //creating a new pdf state
 
 const loading = ref(false);
 
@@ -65,59 +65,70 @@ const yardDetailcategories: never[] = [];
 const chartOptions = computed(() => {
 
     return {
-        grid: {
-        borderColor: "rgba(0,0,1,1)",
-        xaxis: {
-            lines: {
-                show: false,
-            },
-        },
-    },
-
-    chart: {
-        type: "bar", //specify the chart type (e.g. line, bar, area, etc.)
-        animations: {
-            enabled: false, //disable animation to speed up rendering
-        },
-        height: 300,
-        width: 600,
-        toolbar: { show: true },
-        foreColor: "#000000",
-        // fontFamily: "inherit",
-        sparkline: { enabled: false },
-    },
-    series: series,
-
-    dataLabels: { enabled: false },
-    // markers: { size: 0 },
-    legend: { show: false, position: 'bottom', offsetY: 30 },
-
-    xaxis: {
-        type: "category",
-        categories: categories,
-        labels: {
-            style: { cssClass: "fill-color" },   
-        },
-    },
-
-    yaxis: {
-        show: true,
-        min: 0,  //comment out min and max, so chart auto sizes scale to match data
-        max: 30,
-        labels: {
+        title: {
+            text: 'Yard Occupancy Chart',
+            align: 'center',
+            margin: 20,
             style: {
-                cssClass: "fill-color",
+                fontSize: '18px',
+                fontWeight: 'bold',
+                fontFamily: 'inherit',
+                color: '#000000'
+            }
+        },
+        grid: {
+            borderColor: "rgba(0,0,1,1)",
+            xaxis: {
+                lines: {
+                    show: false,
+                },
             },
         },
-    },
-    plotOptions: {
-        bar: {
-        horizontal: false,
-        dataLabels: {
-            position: 'bottom',
+
+        chart: {
+            type: "bar", //specify the chart type (e.g. line, bar, area, etc.)
+            animations: {
+                enabled: false, //disable animation to speed up rendering
+            },
+            height: 300,
+            width: 600,
+            toolbar: { show: true },
+            foreColor: "#000000",
+            // fontFamily: "inherit",
+            sparkline: { enabled: false },
         },
+        series: series,
+
+        dataLabels: { enabled: false },
+        // markers: { size: 0 },
+        legend: { show: false, position: 'bottom', offsetY: 30 },
+
+        xaxis: {
+            type: "category",
+            categories: categories,
+            labels: {
+                style: { cssClass: "fill-color" },   
+            },
         },
-    },
+
+        yaxis: {
+            show: true,
+            min: 0,  //comment out min and max, so chart auto sizes scale to match data
+            max: 30,
+            labels: {
+                style: {
+                    cssClass: "fill-color",
+                },
+            },
+        },
+        plotOptions: {
+            bar: {
+            horizontal: false,
+            dataLabels: {
+                position: 'bottom',
+            },
+            },
+        },
     } as ApexOptions;
     
 })
@@ -125,21 +136,32 @@ const chartOptions = computed(() => {
 const donutOptions = computed(() => {
 
     return {
+        title: {
+            text: 'Real-Time Occupancy Chart',
+            align: 'center',
+            margin: 20,
+            style: {
+                fontSize: '18px',
+                fontWeight: 'bold',
+                fontFamily: 'inherit',
+                color: '#000000'
+            }
+        },
         chart: {
-        type: 'donut',
-        height: 310,
-        width: 300,
-        toolbar: { show: true },
-        foreColor: '#adb0bb',
-        fontFamily: 'inherit',
-    },
-    series: [current.value, capacity.value - current.value],
-    colors: ["#1984c5", "#22a7f0"],
-    dataLabels: { enabled: true },
-    markers: { size: 0 },
-    legend: { show: true, position: 'top' },
-    tooltip: { theme: 'light' },
-    labels: ['Occupied', 'Available'],
+            type: 'donut',
+            height: 310,
+            width: 300,
+            toolbar: { show: true },
+            foreColor: '#adb0bb',
+            fontFamily: 'inherit',
+        },
+        series: [current.value, capacity.value - current.value],
+        colors: ["#1984c5", "#22a7f0"],
+        dataLabels: { enabled: true },
+        markers: { size: 0 },
+        legend: { show: true, position: 'bottom' },
+        tooltip: { theme: 'light' },
+        labels: ['Occupied', 'Available'],
 
     } as ApexOptions;
    
@@ -160,7 +182,18 @@ const yardDetailData = () => {
 const yardDetailchartOptions = computed(() => {
 
     return {
-            colors: ["#1984c5", "#22a7f0"],
+        title: {
+            text: 'Entry/Exit Frequency Chart',
+            align: 'center',
+            margin: 20,
+            style: {
+                fontSize: '18px',
+                fontWeight: 'bold',
+                fontFamily: 'inherit',
+                color: '#000000'
+            }
+        },
+        colors: ["#1984c5", "#22a7f0"],
         grid: {
             borderColor: "rgba(0,0,1,1)",
             xaxis: {
@@ -193,7 +226,7 @@ const yardDetailchartOptions = computed(() => {
 
         dataLabels: { enabled: false },
         // markers: { size: 0 },
-        legend: { show: true, position: 'top' },
+        legend: { show: true, position: 'bottom' },
 
         xaxis: {
             type: "category",
@@ -237,43 +270,6 @@ const generateReport = () => {
     }
 }
 
-const getYardsImageReport = async (doc: any) => {
-    var pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-
-    //get image using apex chart
-    let imgURI = await generateChartImage(chartOptions.value);
-
-    // get width and height of generated chart Image
-    let {naturalWidth, naturalHeight} = await getBase64ImageDimensions(imgURI)
-
-    // Calculate the X-coordinate to center the image horizontally
-    var imageX = (pageWidth - (naturalWidth / 4)) / 2;    //FORMULA: (pageWidth - imageWidth) / 2;
-
-    doc.addImage(imgURI, 'PNG', imageX, currentY.value, naturalWidth / 4, naturalHeight / 4);
-
-    //move cursor below image by adding in image's rendered height
-    currentY.value += naturalHeight / 4;
-  
-}
-
-const getYardDetailImage = async (doc: any) => {
-    var pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
-
-    //get image using apex chart
-    let imgURI = await generateChartImage(donutOptions.value);
-
-    // get width and height of generated chart Image
-    let {naturalWidth, naturalHeight} = await getBase64ImageDimensions(imgURI)
-
-    // Calculate the X-coordinate to center the image horizontally
-    var imageX = (pageWidth - (naturalWidth / 4)) / 2;    //FORMULA: (pageWidth - imageWidth) / 2;
-
-    doc.addImage(imgURI, 'PNG', imageX, currentY.value, naturalWidth / 4, naturalHeight / 4);
-
-    //move cursor below image by adding in image's rendered height
-    currentY.value += naturalHeight / 4;
-}
-
 const getReport = async () => {
 
     try {
@@ -303,6 +299,8 @@ const getReport = async () => {
 
         // Add more text at the updated cursor position
         doc.value.text('Yard Occupancy Report', pageWidth / 2, currentY.value, { align: 'center' });
+
+        currentY.value += fontSize;
 
         if (selectedYard.value && selectedTimeFrameForYardDetail.value) {
             // Yard selected
@@ -340,9 +338,9 @@ const getReport = async () => {
 
             let {naturalWidth: naturalWidth2, naturalHeight: naturalHeight2} = await getBase64ImageDimensions(imgURI2)
 
-            var firstImageX = (pageWidth - (((naturalWidth / 4) * 2) + 4)) / 2;
+            var firstImageX = (pageWidth - (((naturalWidth / 3) * 2) + 4)) / 2;
 
-            var secondImageX = firstImageX + ((naturalWidth / 4) + 4); 
+            var secondImageX = firstImageX + ((naturalWidth / 3) + 4); 
 
             // Calculate the X-coordinate to center the image horizontally
             var imageX = (pageWidth - (naturalWidth / 4)) / 2;    //FORMULA: (pageWidth - imageWidth) / 2;
