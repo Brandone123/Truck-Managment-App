@@ -36,7 +36,7 @@ const partsAndSuppliesStore = usePartsAndSuppliesStore();
 const { partSupplies } = storeToRefs(partsAndSuppliesStore);
 
 const employeeStore = useEmployeeStore();
-const { employeeList,getTechnicianList } = storeToRefs(employeeStore);
+const { employeeList, getTechnicianList } = storeToRefs(employeeStore);
 
 const serviceTask = (service_task_id: any) => {
   return serviceTasks.value.find(
@@ -50,12 +50,12 @@ const getVehicleName = (vehicleId: any) => {
   return vehicleName;
 };
 
-const generateReport = async() => {
+const generateReport = async () => {
   useLayoutStore().setOverlay(true);
   switch (selectedReportType.value) {
     case "Work_Order_Report": // Employee Timeoff Request Report;
       try {
-         await getReport(); // Wait for the report to be generated
+        await getReport(); // Wait for the report to be generated
       } catch (error) {
         console.error("Error generating report:", error);
       } finally {
@@ -218,7 +218,7 @@ const getReport = async () => {
     var pageHeight = doc.value.internal.pageSize.getHeight();
     var bottomMargin = 20;
     const addPageIfNeeded = (requiredHeight?: number): boolean => {
-      if ( currentY.value + (requiredHeight ? requiredHeight : 0) >= pageHeight - bottomMargin) {
+      if (currentY.value + (requiredHeight ? requiredHeight : 0) >= pageHeight - bottomMargin) {
         // Add a new page
         currentY.value = 0;
         if (doc.value?.internal.getNumberOfPages() == 1) {
@@ -242,11 +242,11 @@ const getReport = async () => {
       const x = pdfDoc.internal.pageSize.width - 20;
       const y = pdfDoc.internal.pageSize.height - 10;
       pdfDoc.setFontSize(fontRegular);
-      pdfDoc.text(`Page ${doc.value?.internal.getNumberOfPages()}`, x, y, { align: "center"});
+      pdfDoc.text(`Page ${doc.value?.internal.getNumberOfPages()}`, x, y, { align: "center" });
     };
 
     // Load the image as base64
-    const company_logo = await getBase64ImageFromURL( "/images/users/company.webp");
+    const company_logo = await getBase64ImageFromURL("/images/users/company.webp");
     const user_icon = await getBase64ImageFromURL("/images/users/user.jpg");
     const part_icon = await getBase64ImageFromURL("/images/users/spare_parts.png");
 
@@ -260,13 +260,13 @@ const getReport = async () => {
     });
     // Setting text color to black
 
-    doc.value.text( "\n7277 Rawsonville Road\nBelleville, Michigan, 48111 \nUS \n7344851100", 60, currentY.value,{ align: "left" });
+    doc.value.text("\n7277 Rawsonville Road\nBelleville, Michigan, 48111 \nUS \n7344851100", 60, currentY.value, { align: "left" });
 
     const workorderdata = [
       ["Work Order Number:", `#${props.workOrder.id?.toString()}`],
-      ["Work Order Number:",`${props.workOrder.id ? "#" + props.workOrder.id?.toString() : ""}`,],
-      ["Invoice Number:",`${props.workOrder.invoice_number ? "#" + props.workOrder.invoice_number?.toString() : ""}`],
-      ["PO Number:", `${props.workOrder.po_number ? "#" + props.workOrder.po_number?.toString() : "" }`],
+      ["Work Order Number:", `${props.workOrder.id ? "#" + props.workOrder.id?.toString() : ""}`,],
+      ["Invoice Number:", `${props.workOrder.invoice_number ? "#" + props.workOrder.invoice_number?.toString() : ""}`],
+      ["PO Number:", `${props.workOrder.po_number ? "#" + props.workOrder.po_number?.toString() : ""}`],
     ];
 
     // Setting text color to black
@@ -275,42 +275,42 @@ const getReport = async () => {
       margin: { left: pageWidth - pageWidth / 3 },
       body: workorderdata.slice(1),
       theme: "plain",
-      styles: {fontSize: fontMedium, cellPadding: 0.2, minCellHeight: 2, textColor: [50, 50, 50],},
-      columnStyles: {0: { cellWidth: 40 },1: { cellWidth: 50 }},
+      styles: { fontSize: fontMedium, cellPadding: 0.2, minCellHeight: 2, textColor: [50, 50, 50], },
+      columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 50 } },
     });
 
     currentY.value += 30;
     doc.value.setFontSize(fontLarge);
-    doc.value.text("WORK ORDER DETAILS", currentX.value, currentY.value, {align: "left"});
+    doc.value.text("WORK ORDER DETAILS", currentX.value, currentY.value, { align: "left" });
     doc.value.setFontSize(fontRegular);
 
-    doc.value.line( currentX.value,currentY.value + 3,pageWidth - 15,currentY.value + 3);
+    doc.value.line(currentX.value, currentY.value + 3, pageWidth - 15, currentY.value + 3);
     currentY.value += fontRegular / 2;
     currentY.value += 5;
 
     // row data
     const getTechnicianName = (id: any) => {
-    const technician = employeeList.value.find((employee: any) => employee.user_id == id);
-                  return technician;
-     };
+      const technician = employeeList.value.find((employee: any) => employee.user_id == id);
+      return technician;
+    };
     const issueDate = props.workOrder.schedule_date;
     const data = [
-      ["Issue Date:",date_created ? formatDateTime(date_created.slice(0, 11)) : "--",props.workOrder.id?.toString(),"",],
+      ["Issue Date:", date_created ? formatDateTime(date_created.slice(0, 11)) : "--", props.workOrder.id?.toString(), "",],
       ["", date_created ? date_created.slice(11) : "", "", "\n"],
-      ["Scheduled Start Date:", schedule_date ? formatDateTime(schedule_date) : "--","VIN/SN","--",],
-      ["Actual Start Date:",actual_start_date ? `${formatDateTime(actual_start_date).slice(0,11)} ${formatDateTime(actual_start_date).slice(18)}` : "--","License Plate","D867594",],
-      ["Expected Completion Date:", expected_completion_date ? formatDateTime(expected_completion_date) : "--","Operator:", operator ? operator : "--",],
-      ["Actual Completion Date:", actual_completion_date ? formatDateTime(actual_completion_date) : "--","", ""],
+      ["Scheduled Start Date:", schedule_date ? formatDateTime(schedule_date) : "--", "VIN/SN", "--",],
+      ["Actual Start Date:", actual_start_date ? `${formatDateTime(actual_start_date).slice(0, 11)} ${formatDateTime(actual_start_date).slice(18)}` : "--", "License Plate", "D867594",],
+      ["Expected Completion Date:", expected_completion_date ? formatDateTime(expected_completion_date) : "--", "Operator:", operator ? operator : "--",],
+      ["Actual Completion Date:", actual_completion_date ? formatDateTime(actual_completion_date) : "--", "", ""],
       ["Duration:", duration ? duration : "--", "Type", "DRY VAN"],
       ["", "", "Group", "OWNED TRAILER"],
-      ["Repair Priority Class:",priority ? priority : " --","Odometer",odometer ? odometer : "--",],
-      ["Status:", status ? status : "--","AFTERHOURS CALL ?:",afterhours_call ? afterhours_call.toString() : "",],
-      ["Issued By:",created_by ? created_by.toString() : "--", "CHARGE BACK?:", "","",charge_back ? charge_back.toString() : "",],
-      ["Assigned to:",assigned_to ? getTechnicianName(assigned_to)?.full_name : "--", "CHARGE BACK ISSUED:","","",charge_back_issued ? charge_back_issued.toString() : "",],
-      ["Vendor:", vendor ? vendor : "--","charge back to:", "","",charge_back_to ? charge_back_to.toString() : "",],
-      ["Labels:",labels ? labels[0] : "--","trailer number:","","",trailer_number ? trailer_number : "",],
-      ["ROADCALL?:","", "",roadcall ? roadcall.toString() : "","tire dot number:","","",tire_dot_number ? tire_dot_number.toString() : "",],
-      ["truck number:",truck_number ? truck_number.toString() : vehicle_id ? getVehicleName(vehicle_id)?.model : "",],
+      ["Repair Priority Class:", priority ? priority : " --", "Odometer", odometer ? odometer : "--",],
+      ["Status:", status ? status : "--", "AFTERHOURS CALL ?:", afterhours_call ? afterhours_call.toString() : "",],
+      ["Issued By:", created_by ? created_by.toString() : "--", "CHARGE BACK?:", "", "", charge_back ? charge_back.toString() : "",],
+      ["Assigned to:", assigned_to ? getTechnicianName(assigned_to)?.full_name : "--", "CHARGE BACK ISSUED:", "", "", charge_back_issued ? charge_back_issued.toString() : "",],
+      ["Vendor:", vendor ? vendor : "--", "charge back to:", "", "", charge_back_to ? charge_back_to.toString() : "",],
+      ["Labels:", labels ? labels[0] : "--", "trailer number:", "", "", trailer_number ? trailer_number : "",],
+      ["ROADCALL?:", "", "", roadcall ? roadcall.toString() : "", "tire dot number:", "", "", tire_dot_number ? tire_dot_number.toString() : "",],
+      ["truck number:", truck_number ? truck_number.toString() : vehicle_id ? getVehicleName(vehicle_id)?.model : "",],
     ];
 
     const startX = currentX.value;
@@ -328,13 +328,13 @@ const getReport = async () => {
         if (rowIndex == 0) {
           doc.value.setFont("helvetica", "normal");
           doc.value.text(row[1], startX + columnWidth, y);
-          doc.value.text( row[2] ? row[2].toString() : "--", currentX.value + columnWidth + columnWidth, y);
+          doc.value.text(row[2] ? row[2].toString() : "--", currentX.value + columnWidth + columnWidth, y);
         }
-        doc.value.text(row[1] ? row[1].toString() : "--",startX + columnWidth,y);
+        doc.value.text(row[1] ? row[1].toString() : "--", startX + columnWidth, y);
 
         if (row[2] || row[3]) {
-          doc.value.text( row[2] + "", currentX.value + columnWidth + columnWidth,y);
-          doc.value.text(row[3] ? row[3].toString() : "--",currentX.value + columnWidth + 2 * columnWidth,y);
+          doc.value.text(row[2] + "", currentX.value + columnWidth + columnWidth, y);
+          doc.value.text(row[3] ? row[3].toString() : "--", currentX.value + columnWidth + 2 * columnWidth, y);
         }
       }
     });
@@ -342,9 +342,9 @@ const getReport = async () => {
     currentY.value += data.length * rowHeight + 5;
     doc.value.setFontSize(fontLarge);
     doc.value.setTextColor(5, 5, 5); // Setting text color to black
-    doc.value.text("LINE ITEMS", currentX.value, currentY.value, { align: "left",});
+    doc.value.text("LINE ITEMS", currentX.value, currentY.value, { align: "left", });
     doc.value.setTextColor(50, 50, 50); // Setting text color to black
-    doc.value.line(currentX.value,currentY.value + 3, pageWidth - 15,currentY.value + 3);
+    doc.value.line(currentX.value, currentY.value + 3, pageWidth - 15, currentY.value + 3);
 
     currentY.value += 10;
     const col1Width = (pageWidth - 15) * 0.7;
@@ -364,11 +364,11 @@ const getReport = async () => {
     doc.value.text("Labor", col2X, currentY.value, { align: "right" });
     doc.value.text("Parts", col3X, currentY.value, { align: "right" });
     doc.value.text("Subtotal", col4X, currentY.value, { align: "right" });
-   const tableHeaders = ["Item", "Labor", "Parts", "Subtotal"];
+    const tableHeaders = ["Item", "Labor", "Parts", "Subtotal"];
     addPageIfNeeded(20)
     // Draw a horizontal line under the headers
     doc.value.setDrawColor(200, 200, 200);
-    doc.value.line(col1X,currentY.value + 2,pageWidth - 15,currentY.value + 2);
+    doc.value.line(col1X, currentY.value + 2, pageWidth - 15, currentY.value + 2);
 
     // Data rows for the table
     const rowHeightTable = 10;
@@ -384,9 +384,9 @@ const getReport = async () => {
           doc.value.setTextColor(50, 50, 50)
           doc.value.setFontSize(fontMedium);
           doc.value.text(item.service_task_id ? (("#" + serviceTask(item.service_task_id)?.name) as string) : "--", col1X, currentY.value);
-          doc.value.text( item.labor_cost ? "$" + item.labor_cost?.toString() : "$0",col2X,currentY.value,{align: "right", });
-          doc.value.text(item.part_cost ? "$" + item.part_cost.toString() : "$0",col3X,currentY.value,{ align: "right",});
-          doc.value.text( item.subtotal ? "$" + item.subtotal.toString() : "$0",col4X, currentY.value,{ align: "right", });
+          doc.value.text(item.labor_cost ? "$" + item.labor_cost?.toString() : "$0", col2X, currentY.value, { align: "right", });
+          doc.value.text(item.part_cost ? "$" + item.part_cost.toString() : "$0", col3X, currentY.value, { align: "right", });
+          doc.value.text(item.subtotal ? "$" + item.subtotal.toString() : "$0", col4X, currentY.value, { align: "right", });
           currentY.value += 5;
           doc.value.line(col1X, currentY.value, pageWidth - 15, currentY.value);
           currentY.value += rowHeightTable;
@@ -403,24 +403,24 @@ const getReport = async () => {
                   );
                   return technician;
                 };
-                const lines = doc.value.splitTextToSize( subitem.notes ? subitem.notes.toString() : "",  pageWidth / 3 );
+                const lines = doc.value.splitTextToSize(subitem.notes ? subitem.notes.toString() : "", pageWidth / 3);
                 //alert(lines.length)
                 addPageIfNeeded(lines.length);
-                doc.value.addImage( user_icon,"PNG", col1X + 5,currentY.value - 3, 4, 4);
+                doc.value.addImage(user_icon, "PNG", col1X + 5, currentY.value - 3, 4, 4);
                 doc.value.setTextColor(5, 5, 5)
 
-                doc.value.text( subitem.user_id ? ( getTechnicianName( subitem.user_id)?.full_name.toString() as string) : "", col1X + 10, currentY.value);
+                doc.value.text(subitem.user_id ? (getTechnicianName(subitem.user_id)?.full_name.toString() as string) : "", col1X + 10, currentY.value);
                 doc.value.setFontSize(fontRegular);
                 newPosition.value += 5;
-                const hoursText = subitem.hrs ? subitem.hrs.toString() + 'hrs': "--";
+                const hoursText = subitem.hour ? subitem.hour.toString() + 'hrs' : "--";
                 const hoursX = pageWidth - 100;
                 doc.value.setFontSize(fontRegular);
                 doc.value.text(hoursText, hoursX, currentY.value);
-                const rateText = subitem.rate  ? "$" + subitem.rate.toString() : "--";
+                const rateText = subitem.hourly_labor_rate ? "$" + subitem.hourly_labor_rate.toString() : "--";
                 const rateX = pageWidth - 100;
                 doc.value.text(rateText, hoursX, currentY.value + 5);
 
-                doc.value.text( subitem.subtotal ? "$" + subitem.subtotal.toString() : "--", col4X, currentY.value, { align: "right" });
+                doc.value.text(subitem.subtotal ? "$" + subitem.subtotal.toString() : "--", col4X, currentY.value, { align: "right" });
                 // Print each line with the specified line height
                 doc.value.setTextColor(50, 50, 50)
                 doc.value.setFontSize(fontMedium);
@@ -429,7 +429,7 @@ const getReport = async () => {
                   addPageIfNeeded(20)
                   doc.value?.setFontSize(fontRegular)
                   if (doc.value) {
-                    doc.value.text( line, col1X + 10, currentY.value + 5 + index * 5 );
+                    doc.value.text(line, col1X + 10, currentY.value + 5 + index * 5);
                   }
                 });
                 currentY.value = newPosition.value + 8;
@@ -439,7 +439,7 @@ const getReport = async () => {
             });
             doc.value.setDrawColor(200, 200, 200); // Light grey color
             currentY.value += 2;
-            doc.value.line( col1X, currentY.value - 2, pageWidth - 15,currentY.value - 2);
+            doc.value.line(col1X, currentY.value - 2, pageWidth - 15, currentY.value - 2);
           } else {
             doc.value.text(
               " - No Labor Associated with this service",
@@ -455,13 +455,13 @@ const getReport = async () => {
                 const getPartNumber = (partId: number) => {
                   return partSupplies.value?.find((part) => part.id == partId)?.part_number;
                 };
-                const lines = doc.value.splitTextToSize( part.notes ? part.notes.toString() : "",  pageWidth / 3);
+                const lines = doc.value.splitTextToSize(part.notes ? part.notes.toString() : "", pageWidth / 3);
                 addPageIfNeeded(lines.length);
 
                 currentY.value += 5;
                 doc.value.setFontSize(fontMedium);
-                doc.value.addImage(part_icon,"PNG", col1X + 5,currentY.value - 3,3,3);
-                doc.value.text( getPartNumber(part.part_id) ? getPartNumber(part.part_id) : "", col1X + 9, currentY.value
+                doc.value.addImage(part_icon, "PNG", col1X + 5, currentY.value - 3, 3, 3);
+                doc.value.text(getPartNumber(part.part_id) ? getPartNumber(part.part_id) : "", col1X + 9, currentY.value
                 );
                 doc.value.setFontSize(fontRegular);
                 doc.value.setTextColor(50, 50, 50)
@@ -477,7 +477,7 @@ const getReport = async () => {
                 const unitCostX = pageWidth - 100;
                 doc.value.text(unitCostText, unitCostX, currentY.value + 5);
 
-                doc.value.text( part.subtotal ? "$" + part.subtotal.toString() : "--", col4X, currentY.value, { align: "right" } );
+                doc.value.text(part.subtotal ? "$" + part.subtotal.toString() : "--", col4X, currentY.value, { align: "right" });
                 // Print each line with the specified line height
                 doc.value.setTextColor(50, 50, 50)
                 lines.forEach((line, index) => {
@@ -485,7 +485,7 @@ const getReport = async () => {
                   itemPosition.value += 5;
                   if (doc.value) {
                     doc.value.setFontSize(fontRegular);
-                    doc.value.text( line, col1X + 10, currentY.value + 5 + index * 5 );
+                    doc.value.text(line, col1X + 10, currentY.value + 5 + index * 5);
                     currentY.value += 1;
                   }
                 });
@@ -494,15 +494,15 @@ const getReport = async () => {
                 addPageIfNeeded();  //tem[oart]
                 currentY.value += itemPosition.value + 5;
                 currentY.value += 2;
-                doc.value.line( col1X, currentY.value - 2, pageWidth - 15,currentY.value - 2);
+                doc.value.line(col1X, currentY.value - 2, pageWidth - 15, currentY.value - 2);
               }
             });
           } else {
             doc.value.setFontSize(fontRegular);
             doc.value.setTextColor(50, 50, 50)
-            doc.value.text( "- No Part Associated with this Item", col1X + 5,currentY.value + 10);
+            doc.value.text("- No Part Associated with this Item", col1X + 5, currentY.value + 10);
             currentY.value += 10;
-            doc.value.line( col1X,currentY.value - 15, pageWidth - 15,currentY.value - 15);
+            doc.value.line(col1X, currentY.value - 15, pageWidth - 15, currentY.value - 15);
             addPageIfNeeded();
           }
 
@@ -513,7 +513,7 @@ const getReport = async () => {
       });
     } else {
       doc.value.setFontSize(fontMedium);
-      doc.value.text( "- No Part Associated with this Item", col1X + 5,  currentY.value);
+      doc.value.text("- No Part Associated with this Item", col1X + 5, currentY.value);
       doc.value.line(col1X, currentY.value + 2, pageWidth - 20, currentY.value + 2);
       currentY.value += 15;
     }
@@ -535,7 +535,7 @@ const getReport = async () => {
     doc.value.setFontSize(fontMedium);
 
     doc.value.setDrawColor(5, 5, 5)
-    const lines = doc.value.splitTextToSize( description ? description : "", pageWidth / 3);
+    const lines = doc.value.splitTextToSize(description ? description : "", pageWidth / 3);
 
     // Print each line with the specified line height
     doc.value.setTextColor(50, 50, 50)
@@ -551,22 +551,22 @@ const getReport = async () => {
     const tableData1 = [
       ["Key", "Value"],
       ["Subtotal", `$${props.workOrder.subtotal ? props.workOrder.subtotal?.toString() : "0"}`,],
-      ["Labor",`$${props.workOrder.labor_subtotal ? props.workOrder.labor_subtotal?.toString(): "0" }`],
-      ["Parts",`$${props.workOrder.parts_subtotal ? props.workOrder.parts_subtotal?.toString() : "0"}`],
-      ["Warranty Credits",`$${props.workOrder.warranty_credits ? props.workOrder.warranty_credits?.toString(): "0" }`,],
-      ["Discount",`$${props.workOrder.discount_amount ? props.workOrder.discount_amount?.toString() : "0"}`],
+      ["Labor", `$${props.workOrder.labor_subtotal ? props.workOrder.labor_subtotal?.toString() : "0"}`],
+      ["Parts", `$${props.workOrder.parts_subtotal ? props.workOrder.parts_subtotal?.toString() : "0"}`],
+      ["Warranty Credits", `$${props.workOrder.warranty_credits ? props.workOrder.warranty_credits?.toString() : "0"}`,],
+      ["Discount", `$${props.workOrder.discount_amount ? props.workOrder.discount_amount?.toString() : "0"}`],
       ["Tax", `$${props.workOrder.tax ? props.workOrder.tax?.toString() : "0"}`,],
     ];
 
     const totalAmount = [
-      ["Total",`${props.workOrder.total_cost ? "$" + props.workOrder.total_cost?.toString() : "$0" }`],
+      ["Total", `${props.workOrder.total_cost ? "$" + props.workOrder.total_cost?.toString() : "$0"}`],
     ];
     doc.value.setFontSize(fontLarge);
     doc.value.text("SUMMARY", tableX, startYY + 5, { align: "left" });
     doc.value.setFontSize(fontMedium);
 
     doc.value.setDrawColor(0, 0, 0); // Light grey color
-    doc.value.line(tableX, startYY + 10, pageWidth - pageWidth / 9,startYY + 10);
+    doc.value.line(tableX, startYY + 10, pageWidth - pageWidth / 9, startYY + 10);
     const summaryPosition = ref(startYY);
     // Add table to PDF
     doc.value.setTextColor(5, 5, 5); // Setting text color to black
@@ -576,18 +576,19 @@ const getReport = async () => {
       margin: { left: tableX },
       body: tableData1.slice(1),
       theme: "plain",
-      styles: { fontSize: 10, cellPadding: 1, minCellHeight: 2, textColor: [50, 50, 50],
+      styles: {
+        fontSize: 10, cellPadding: 1, minCellHeight: 2, textColor: [50, 50, 50],
       },
-      willDrawCell: (HookData) => { 
+      willDrawCell: (HookData) => {
         addPageIfNeeded();
       },
       didDraw: (data) => {
         addPageIfNeeded();
       },
       columnStyles: {
-        0: { cellWidth: 40, halign: 'left' }, 
-        1: { cellWidth: 20, halign: 'right',textColor: [50, 50, 50]},
-       },
+        0: { cellWidth: 40, halign: 'left' },
+        1: { cellWidth: 20, halign: 'right', textColor: [50, 50, 50] },
+      },
     });
     currentY.value += tableData1.length * 3;
     doc.value.setFontSize(fontMedium);
@@ -597,11 +598,12 @@ const getReport = async () => {
       margin: { left: tableX - 1 },
       body: totalAmount,
       theme: "plain", // No stripes
-      styles: { fontSize: fontLarge, cellPadding: 1, minCellHeight: 2, direction: 'ltr',  textColor: [10, 10, 10], },
+      styles: { fontSize: fontLarge, cellPadding: 1, minCellHeight: 2, direction: 'ltr', textColor: [10, 10, 10], },
       columnStyles: {
-        0: { cellWidth: 40, halign: 'left' }, 
-        1: { cellWidth: 20, halign: 'right',},
-       },    });
+        0: { cellWidth: 40, halign: 'left' },
+        1: { cellWidth: 20, halign: 'right', },
+      },
+    });
 
     if (addPageIfNeeded(95)) {
       addPageIfNeeded(95)
@@ -614,7 +616,7 @@ const getReport = async () => {
     doc.value.text("PHOTOS", currentX.value, currentY.value, { align: "left" });
     doc.value.setFontSize(fontMedium);
 
-    doc.value.line( currentX.value, currentY.value + 5, pageWidth - 10,currentY.value + 5 );
+    doc.value.line(currentX.value, currentY.value + 5, pageWidth - 10, currentY.value + 5);
 
     doc.value.setFontSize(fontMedium);
 
@@ -622,44 +624,44 @@ const getReport = async () => {
     var imageWidth = 50;
 
     // (async () => {
-  try {
-    if (photos && photos.length > 0) {
-      for (const photo of photos) {
-        const base64Image = await toDataURL(photo.src) //await toDataURL(photo.src);
-        const extension = photo.src.split('.').pop()?.toUpperCase() || 'jpg';
-        if (doc.value && base64Image) {
-          doc.value.addImage( base64Image, extension, currentX.value, currentY.value, imageWidth,imageWidth);
-          currentY.value += 55;
-          doc.value.text( photo ? photo.name : "",  currentX.value, currentY.value, { align: "left",});
-        }
-        currentY.value -= 55;
-        currentX.value += imageWidth + imageWidth / 4;
+    try {
+      if (photos && photos.length > 0) {
+        for (const photo of photos) {
+          const base64Image = await toDataURL(photo.src) //await toDataURL(photo.src);
+          const extension = photo.src.split('.').pop()?.toUpperCase() || 'jpg';
+          if (doc.value && base64Image) {
+            doc.value.addImage(base64Image, extension, currentX.value, currentY.value, imageWidth, imageWidth);
+            currentY.value += 55;
+            doc.value.text(photo ? photo.name : "", currentX.value, currentY.value, { align: "left", });
+          }
+          currentY.value -= 55;
+          currentX.value += imageWidth + imageWidth / 4;
 
-        if (currentX.value + imageWidth + imageWidth / 4 >= pageWidth) { 
-          console.log("Resetting currentX");
-          currentX.value = 15;
-          currentY.value += 60;
-          addPageIfNeeded(55);
+          if (currentX.value + imageWidth + imageWidth / 4 >= pageWidth) {
+            console.log("Resetting currentX");
+            currentX.value = 15;
+            currentY.value += 60;
+            addPageIfNeeded(55);
+          }
+        };
+      } else {
+        doc.value.setFontSize(fontRegular)
+        doc.value.setTextColor(50, 50, 50)
+        doc.value.text(
+          "No Image for this Service",
+          currentX.value,
+          currentY.value,
+          { align: "left" }
+        );
       }
-      };
-    } else {
-      doc.value.setFontSize(fontRegular)
-      doc.value.setTextColor(50, 50, 50)
+    } catch (error) {
       doc.value.text(
-         "No Image for this Service",
-         currentX.value,
-         currentY.value,
-         { align: "left" }
-       );
+        "Cant display the images for this Service",
+        currentX.value,
+        currentY.value,
+        { align: "left" }
+      );
     }
-     } catch (error) {
-       doc.value.text(
-         "Cant display the images for this Service",
-         currentX.value,
-         currentY.value,
-         { align: "left" }
-       );
-     }
     // })
 
     currentY.value += fontLarge;
@@ -699,7 +701,7 @@ defineExpose({ generateReport });
 </script>
 
 <template>
-  <v-dialog fullscreen v-model="dialog">
+  <!-- <v-dialog fullscreen v-model="dialog">
     <template v-slot:default="{ isActive }">
       <v-card class="grey-background">
         <v-toolbar color="primary" title="Work Order" density="compact">
@@ -716,7 +718,6 @@ defineExpose({ generateReport });
               </v-col>
             </v-col>
             <v-col cols="8" class="overflow-y-scroll filled-height pa-0">
-              <!-- <div v-if="pdfDataUri.length"> <v-btn @click="downloadPDF">Download PDF</v-btn></div> -->
               <div v-if="loading" class="loading-overlay d-flex justify-center align-center"
                 style="height: 100%; width: 100%">
                 <span>
@@ -724,14 +725,15 @@ defineExpose({ generateReport });
               </div>
               <iframe v-if="pdfDataUri" id="pdfPreview" :src="pdfDataUri"></iframe>
               <div v-else class="d-flex justify-center align-center" style="height: 100%; width: 100%">
-                <!-- <span>No Document Generated</span> -->
+                <span>No Document Generated</span>
               </div>
             </v-col>
           </v-row>
         </v-card-text>
       </v-card>
     </template>
-  </v-dialog>
+  </v-dialog> -->
+  <v-btn color="primary" @click="generateReport">Generate Report</v-btn>
 </template>
 <style scoped>
 .overflow-y-scroll {

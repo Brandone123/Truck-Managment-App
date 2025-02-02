@@ -23,8 +23,8 @@
                     getTimeDifference(laborDetail.start_time, laborDetail.end_time) }}</div>
                 <div>
                     <v-icon class="mr-2" size="x-small">mdi-timer</v-icon><span>{{
-                        laborDetail.hrs }}hrs x ${{
-                            laborDetail.rate }}</span>
+                        laborDetail.hour }}hrs x ${{
+                            laborDetail.hourly_labor_rate }}</span>
                 </div>
             </div>
         </v-col>
@@ -37,14 +37,14 @@
 
 <script setup lang="ts">
 import moment from 'moment'
-import type { Labors } from '@/types/maintenance/workOrder'
+import type { Labor } from '@/types/maintenance/workOrder'
 
 
 const props = defineProps({
     laborDetail: {
-        type: Object as PropType<Partial<Labors>>,
+        type: Object as PropType<Partial<Labor>>,
         required: true,
-        default: {} as Labors
+        default: {} as Labor
     },
     getTechnicianName: {
         type: Function,
