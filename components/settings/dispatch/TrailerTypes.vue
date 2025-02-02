@@ -13,7 +13,7 @@ const trailerTypeHeaders = ref([
     { title: 'Description', key: 'description' },
 ])
 
-</script>
+</script> 
 <template>
     <SharedUiCustomTable :headers="trailerTypeHeaders" :items="trailerTypeList">
     </SharedUiCustomTable>

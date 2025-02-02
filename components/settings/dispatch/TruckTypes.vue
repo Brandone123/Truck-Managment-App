@@ -11,7 +11,7 @@ const truckTypeHeaders = ref([
     { title: 'Description', key: 'description' },
 ])
 
-</script>
+</script> 
 <template>
     <SharedUiCustomTable :headers="truckTypeHeaders" :items="truckTypeList">
     </SharedUiCustomTable>
