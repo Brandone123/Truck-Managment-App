@@ -1,5 +1,5 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="updateModelValue" scrollable fullscreen>
+  <v-dialog v-model="dialog" scrollable fullscreen>
     <v-card class="grey-background">
       <v-toolbar color="primary" dark density="compact">
         <v-toolbar-title>{{ title }}</v-toolbar-title>
@@ -9,146 +9,136 @@
         </v-btn>
       </v-toolbar>
       <v-card-text>
-        <v-window v-model="step">
-          <v-window-item :value="1">
-            <v-list class="rounded">
-              <template v-for="(form, i) in forms">
-                <v-list-item :disabled="invalidForm(form)" :title="form.name" @click="selectForm(form)">
-                  <v-list-subtitle v-if="invalidForm(form)">
-                    <v-chip density="compact" v-if="(form.elements?.length || 0) < 0">No Elements</v-chip>
-                    <v-chip density="compact" v-if="form.status == 'draft'">Draft</v-chip>
-                  </v-list-subtitle>
-                </v-list-item>
-                <v-divider v-if="i + 1 < forms.length"></v-divider>
-              </template>
-            </v-list>
-          </v-window-item>
-          <v-window-item :value="2">
-            <v-form ref="inspectionForm">
-              <v-col cols="12" class="pb-0">
-                <v-autocomplete variant="solo" v-model="localInspection.vehicle_id" label="Vehicle" item-title="name"
-                  item-value="id" :items="assetList" :rules="[validation.required]" :custom-filter="customFilter">
-                  <template v-slot:item="{ props, item }">
-                    <v-list-item v-bind="props" :subtitle="(item.raw.id as number)"
-                      :title="item.raw.name"></v-list-item>
-                  </template>
-                </v-autocomplete>
-              </v-col>
+        <v-form ref="inspectionForm">
+          <v-row v-if="!inspection.id">
+            <v-col cols="12" md="6">
+              <SharedInputFormInput @selection="selectForm" variant="solo" density="comfortable"
+                v-model="inspectionFormId" label="Form" :rules="[validation.required]" flat />
+            </v-col>
 
-              <v-expand-transition>
-                <v-col v-if="localInspection.vehicle_id" class="pt-0">
-                  <v-card class="mt-3" v-for="(section, sectionIndex) in inspectionFormElements">
-                    <div v-for="(item, index) in section" class="pa-2">
-                      <!-- Section -->
-                      <div v-if="item.type == 'section'" class="text-h6">{{ item.label }}</div>
+            <v-col cols="12" md="6">
+              <!-- <SharedInputVehicleAutoCompleteInput variant="solo" density="comfortable"
+                :disabled="!localInspection.inspection_form_id" :custom-filter="customFilter"
+                v-model="localInspection.vehicle_id" label="Select Vehicle" :rules="[validation.required]" /> -->
+              <SharedInputVehicleAutoCompleteInput variant="solo" density="comfortable" :disabled="!inspectionFormId"
+                v-model="vehicleId" label="Select Vehicle" :rules="[validation.required]" />
+            </v-col>
+          </v-row>
 
-                      <div v-else>
-                        <v-row>
-                          <v-col cols="12" md="6">
-                            <p>{{ item.label }} <span v-if="item.required">*</span></p>
-                            <p class="text-caption" v-if="item.description">{{ item.description }}</p>
-                          </v-col>
-                          <v-col cols="12" md="6">
-                            <!-- Free Text -->
-                            <v-textarea :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-if="item.type == 'free_text'" density="compact" variant="outlined"></v-textarea>
+          <v-expand-transition>
+            <v-col
+              v-if="(Object.keys(responses).length && inspectionFormElements && (inspection.id || (inspectionFormId && vehicleId)) && dialog)"
+              class="pt-0">
+              <v-card class="mt-3" v-for="(section, sectionIndex) in inspectionFormElements" :key="sectionIndex">
+                <div v-for="(item, index) in section" class="pa-2">
+                  <div v-if="item.type == 'section'" class="text-h6">{{ item.label }}</div>
 
-                            <!-- Number -->
-                            <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'number'" type="number" density="compact"
-                              variant="outlined"></v-text-field>
+                  <div v-else>
+                    <v-row>
+                      <v-col cols="12" md="6">
+                        <p>{{ item.label }} <span v-if="item.required">*</span></p>
+                        <p class="text-caption" v-if="item.description">{{ item.description }}</p>
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <!-- Free Text -->
+                        <v-textarea :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-if="item.type == 'free_text'" density="compact" variant="outlined"></v-textarea>
 
-                            <!-- Pass / Fail -->
-                            <v-radio-group :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'pass_fail'" inline color="primary">
-                              <v-radio value="pass" :label="item.pass_label"></v-radio>
-                              <v-radio value="fail" :label="item.fail_label"></v-radio>
-                            </v-radio-group>
+                        <!-- Number -->
+                        <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'number'" type="number" density="compact"
+                          variant="outlined"></v-text-field>
 
-                            <!-- Signature -->
-                            <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'signature'" placeholder="Type your name to sign"></v-text-field>
+                        <!-- Pass / Fail -->
+                        <v-radio-group :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'pass_fail'" inline color="primary">
+                          <v-radio value="pass" :label="item.pass_label"></v-radio>
+                          <v-radio value="fail" :label="item.fail_label"></v-radio>
+                        </v-radio-group>
 
-                            <!-- Dropdown -->
-                            <v-select :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'dropdown'" :items="item.choices" item-title="text"
-                              item-value="text" density="compact" variant="outlined"></v-select>
+                        <!-- Signature -->
+                        <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'signature'" placeholder="Type your name to sign"></v-text-field>
 
-                            <!-- Date Time -->
-                            <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'date_time'" density="compact" variant="outlined"
-                              :type="item.date_only ? 'date' : 'datetime-local'"></v-text-field>
+                        <!-- Dropdown -->
+                        <v-select :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'dropdown'" :items="item.choices" item-title="text" item-value="text"
+                          density="compact" variant="outlined"></v-select>
 
-                            <!-- Meter Entry -->
-                            <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id]"
-                              v-else-if="item.type == 'meter_entry'" density="compact" variant="outlined"
-                              type="number"></v-text-field>
+                        <!-- Date Time -->
+                        <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'date_time'" density="compact" variant="outlined"
+                          :type="item.date_only ? 'date' : 'datetime-local'"></v-text-field>
+
+                        <!-- Meter Entry -->
+                        <v-text-field :rules="getValidationRules(item)" v-model="responses[item.id].value"
+                          v-else-if="item.type == 'meter_entry'" density="compact" variant="outlined"
+                          type="number"></v-text-field>
+
+                        <!-- ADDING COMMENT AND PHOTO -->
+
+                        <!-- comment input -->
+                        <div v-if="responses[item.id].comment">
+                          <v-textarea v-model="responses[item.id].comment!.comment" label="Comments" variant="outlined"
+                            density="compact">
+                          </v-textarea>
+                        </div>
 
 
+                        <!-- file input -->
+                        <v-btn color="primary" class="ma-1" v-if="showAddPhoto[item.id]"
+                          @click="triggerFileInput(item.id)">Upload
+                          Photo</v-btn>
+                        <input type="file" :ref="setFileInputRef(item.id)" style="display: none"
+                          @change="(event) => handleFileChange(item.id, event, 'photos')" accept="image/*" />
 
-                            <!-- ADDING COMMENT AND PHOTO -->
+                        <v-list>
+                          <v-list-item v-for="(photo, i) in (responses[item.id].photos || [])"
+                            :title="((photo.name || photo) as string)" :key="i">
+                            <template v-slot:prepend>
+                              <v-btn icon size="x-small" @click="responses[item.id].photos?.splice(i, 1)" flat
+                                color="error" variant="tonal" class="mr-2"><v-icon>mdi-window-close</v-icon></v-btn>
+                            </template>
+                          </v-list-item>
+                        </v-list>
 
-                            <!-- comment input -->
-                            <v-textarea v-if="showAddComment[item.id]" v-model="comments[item.id]" label="Comments"
-                              variant="outlined" density="compact">
-                            </v-textarea>
+                        <div class="d-flex justify-end">
+                          <v-menu open-on-hover>
+                            <template v-slot:activator="{ props }">
+                              <v-btn color="primary" v-bind="props" class="text-none" density="comfortable"
+                                variant="text">
+                                <v-icon class="mr-2">mdi-plus</v-icon> Add Remark
+                                <v-icon class="ml-1">mdi-chevron-down</v-icon>
+                              </v-btn>
+                            </template>
 
-                            <!-- file input -->
-                            <v-btn color="primary" class="ma-1" v-if="showAddPhoto[item.id]"
-                              @click="triggerFileInput(item.id)">Upload
-                              Photo</v-btn>
-                            <input type="file" :ref="setFileInputRef(item.id)" style="display: none"
-                              @input="handleFileChange(item.id, $event)" accept="image/*" />
-
-                            <v-list v-if="showAddPhoto[item.id]">
-                              <v-list-item v-for="(photo, i) in (photos[item.id] || [])" :title="photo.name">
-                                <template v-slot:prepend>
-                                  <v-btn icon size="x-small" @click="photos[item.id].splice(i, 1)" flat color="error"
-                                    variant="tonal" class="mr-2"><v-icon>mdi-window-close</v-icon></v-btn>
-                                </template>
+                            <v-list>
+                              <v-list-item :disabled="Boolean(responses[item.id].comment)" @click="addComment(item.id)">
+                                <v-list-item-title>Add Comment</v-list-item-title>
+                              </v-list-item>
+                              <v-list-item @click="addPhoto(item.id)">
+                                <v-list-item-title>Add Photo</v-list-item-title>
                               </v-list-item>
                             </v-list>
+                          </v-menu>
+                        </div>
+                      </v-col>
+                    </v-row>
+                  </div>
+                  <v-divider class="mb-2 mt-4" v-if="item.type != 'section' && index + 1 < section.length"></v-divider>
+                </div>
+              </v-card>
+            </v-col>
+          </v-expand-transition>
+        </v-form>
 
-                            <div class="d-flex justify-end">
-                              <v-menu open-on-hover>
-                                <template v-slot:activator="{ props }">
-                                  <v-btn color="primary" v-bind="props" class="text-none" density="comfortable"
-                                    variant="text">
-                                    <v-icon class="mr-2">mdi-plus</v-icon> Add Remark
-                                    <v-icon class="ml-1">mdi-chevron-down</v-icon>
-                                  </v-btn>
-                                </template>
-
-                                <v-list>
-                                  <v-list-item :disabled="showAddComment[item.id]" @click="addComment(item.id)">
-                                    <v-list-item-title>Add Comment</v-list-item-title>
-                                  </v-list-item>
-                                  <v-list-item :disabled="showAddPhoto[item.id]" @click="addPhoto(item.id)">
-                                    <v-list-item-title>Add Photo</v-list-item-title>
-                                  </v-list-item>
-                                </v-list>
-                              </v-menu>
-                            </div>
-                          </v-col>
-                        </v-row>
-                      </div>
-                      <v-divider class="mb-2 mt-4"
-                        v-if="item.type != 'section' && index + 1 < section.length"></v-divider>
-                    </div>
-                  </v-card>
-                </v-col>
-              </v-expand-transition>
-            </v-form>
-          </v-window-item>
-        </v-window>
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions>
-        <v-btn color="primary" variant="text" @click="closeDialog">cancel</v-btn>
+        <v-btn color="primary" variant="text" @click="closeDialog">Cancel</v-btn>
         <v-spacer></v-spacer>
-        <!-- <v-btn v-if="step < 2" color="primary" @click="step += 1">Next<v-icon>mdi-chevron-right</v-icon></v-btn> -->
-        <!-- <v-btn v-if="step > 1" color="primary" @click="step -= 1"><v-icon>mdi-chevron-left</v-icon>Back</v-btn> -->
-        <v-btn v-if="step == 2" color="primary" variant="text" @click="saveInspection">Save</v-btn>
+        <v-btn color="primary" variant="text" @click="saveInspection"
+          :disabled="!vehicleId || !formSelected">Save</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -159,7 +149,10 @@ import { ref, computed, watch } from 'vue';
 import type { Inspection } from '@/types/maintenance/inspection';
 import { useValidation } from '~/composables/formValidation';
 import type { InspectionForm } from '~/types/maintenance/inspectionForm';
+import type { InspectionItem } from '@/types/maintenance/inspection';
+import type { Comment } from '~/types/maintenance/commentTypes';
 
+const mediaStore = useMediaStore();
 const validation = useValidation();
 
 const inspectionFormStore = useInspectionFormStore();
@@ -168,6 +161,15 @@ const { forms } = storeToRefs(inspectionFormStore);
 
 const assetStore = useAssetStore()
 const { assetList } = storeToRefs(assetStore)
+
+
+// type DeepPartial<T> = {
+//   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+// };
+
+// type DeepPartial<T> = {
+//   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> | undefined : T[P];
+// };
 
 const props = defineProps({
   modelValue: {
@@ -182,81 +184,98 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'close', 'save']);
 
-const invalidForm = (form : any) => {
+const invalidForm = (form: any) => {
   return form.elements?.length < 0 || form.status == 'draft'
 }
 
-const responses = ref<Record<string, string>>({});
-const comments = ref<Record<string, string>>({});
-const photos = ref<Record<string, any[]>>({});
+const responses = ref<Record<string, Partial<InspectionItem>>>({});
 
-const showAddComment = ref<Record<string, boolean>>({});
 const showAddPhoto = ref<Record<string, boolean>>({});
 
-const localInspection = ref<Partial<Inspection>>(JSON.parse(JSON.stringify(props.inspection)));
-
-const step = ref(1)
+const vehicleId = ref<number | null>(null)
+const inspectionFormId = ref<number | null>(null)
+const startTime = ref<string | null>(null)
 
 const selectedForm = ref<InspectionForm | null>(null)
 
-const selectForm = (form: InspectionForm) => {
-  selectedForm.value = form
-  step.value = 2
-}
+const formSelected = computed(() => !!selectedForm.value)
 
-const getDateTime = () => {
-  const now = new Date();
-
-  // Get individual components
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // Pad single digits with a leading zero
-  const date = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-
-  // Format the date and time as a string
-  return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
-}
-
-
-watch(
-  () => props.inspection,
-  (newInspection) => {
-    localInspection.value = JSON.parse(JSON.stringify(newInspection));
-  }
-);
-
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    // if (newValue == false) {
-      resetForm();
-    // }
-  })
-
-// const title = computed(() => (props.inspection && props.inspection.id ? 'Edit Inspection' : 'Create Inspection'));
-
-const title = computed(() => {
-  switch (step.value) {
-    case 1:
-      return 'Select Inspection Form'
-    case 2:
-      return 'New Vehicle Inspection'
+const dialog = computed({
+  get() {
+    return props.modelValue
+  },
+  set(val) {
+    emit('update:modelValue', val)
   }
 })
 
 const inspectionForm = ref<HTMLFormElement | null>(null);
 
+//instantiate responses when form is selected
+const selectForm = (form: InspectionForm) => {
+  if (form.current_version) {
+    let items: Record<string, any> = {}
+    form.current_version?.elements?.forEach(item => {
+      items[item.id] = {
+        workflow_id: item.id,
+        item: item.label,
+        value: '',
+        comment: undefined,
+        photos: []
+      }
+    })
+    responses.value = JSON.parse(JSON.stringify(items))
+  }
+  selectedForm.value = form
+}
+
+const getUTCTimeStamp = () => {
+  return new Date().toISOString(); //.slice(0, 19).replace('T', ' ');
+}
+
+// populate form when updating
+watch(() => dialog.value, (newVal) => {
+  if (newVal) {
+    if (props.inspection.id && props.inspection.items?.length) {
+      let payload: Record<string, any> = {}
+      props.inspection.items?.forEach(item => {
+        payload[item.workflow_id] = item
+      })
+      responses.value = JSON.parse(JSON.stringify(payload))
+    }
+    startTime.value = getUTCTimeStamp()
+  }
+  else {
+    resetForm();
+  }
+})
+
+
+
+const title = computed(() => {
+  return props.inspection && props.inspection.id ? 'Edit Inspection' : 'Create Inspection'
+})
+
+//this computed property returns the form items for the selected form
 const inspectionFormElements = computed(() => {
-  if (!selectedForm.value) {
-    return []
+  let formItems = [] as any[]
+
+  if (props.inspection.id) { //editing form
+    formItems = props.inspection.form_version?.elements || []
+  }
+  else if (selectedForm.value?.current_version) { //adding new form
+    formItems = selectedForm.value.current_version.elements
+  }
+
+
+  if (!formItems.length) {
+    return [];
   }
 
   let result: any = [];
   let currentSubArray: any = [];
 
-  selectedForm.value.elements?.forEach((item: any) => {
+  formItems.forEach((item: any) => {
     if (item.type === 'section') {
       if (currentSubArray.length > 0) {
         result.push(currentSubArray);
@@ -269,26 +288,23 @@ const inspectionFormElements = computed(() => {
   if (currentSubArray.length > 0) {
     result.push(currentSubArray);
   }
+
   return result;
 })
 
 const addComment = (itemId: string) => {
-  showAddComment.value[itemId] = true
+  responses.value[itemId].comment = {} as Comment;
 }
 
 const addPhoto = (itemId: string) => {
   showAddPhoto.value[itemId] = true
 }
 
-
-// const fileInputs = ref<number[]>([]);
 const fileInputRefs = ref<Record<string, HTMLInputElement | null>>({});
 
-
-// Function to set the file input ref
 const setFileInputRef = (index: number) => {
   return (el: any) => {
-    fileInputRefs.value[index] = el //as HTMLInputElement | null;
+    fileInputRefs.value[index] = el;
   };
 };
 
@@ -301,19 +317,26 @@ const triggerFileInput = (index: string) => {
   }
 };
 
-const handleFileChange = (index: string, event: Event) => {
+const handleFileChange = async (index: string, event: any, location: string) => {
   const target = event.target as HTMLInputElement;
 
   if (target.files) {
-    if (!photos.value[index]) {
-      photos.value[index] = []
-    }
+    const files = Array.from(target.files);
 
-    photos.value[index] = [...photos.value[index], ...target.files]
+    for (const file of files) {
+      const { data, error } = await mediaStore.uploadFile(file);
+      if (data) {
+        if (!Array.isArray(responses.value[index].photos)) {
+          responses.value[index].photos = [];
+        }
+        responses.value[index].photos.push(data);
+      }
+    }
   }
-  // Clear the file input
+
+  // Clear input value
   target.value = '';
-};
+}
 
 const getValidationRules = (item: any) => {
   let rules = []
@@ -322,7 +345,6 @@ const getValidationRules = (item: any) => {
       rules.push(validation.required)
       break;
     default:
-      //do nothing
       break;
   }
 
@@ -330,67 +352,53 @@ const getValidationRules = (item: any) => {
 }
 
 const saveInspection = async () => {
-  let formStatus = await inspectionForm.value?.validate()
+  let formStatus = await inspectionForm.value?.validate();
   if (!formStatus.valid) {
-    return
+    return;
   }
 
-  let items: any[] = selectedForm.value?.elements.filter(item => item.type != 'section').map(item => { return { id: item.id, name: item.label } }) as any
-
-  items = items.map((itemValue: any) => {
+  let formItems = Object.values(responses.value).map(item => {
     return {
-      id: itemValue.id,
-      item: itemValue.name,
-      value: responses.value[itemValue.id],
-      photos: [],
-      comments: comments.value[itemValue.id] || "",
-    } as any
+      ...item,
+      comment: item.comment?.comment
+    }
   })
+  let payload = {
+    //inspection_form_id: props.inspection.id ?? inspectionFormId,
+    //form_version_id: props.inspection.id ? undefined : selectedForm.value?.current_version?.id,
+    //vehicle_id: props.inspection.id ? undefined : vehicleId.value,
+    inspection_form_id: props.inspection.id ?? inspectionFormId,
+    form_version_id: selectedForm.value?.current_version?.id,   
+    vehicle_id: vehicleId.value,
+    items: formItems,
+    started_on: getUTCTimeStamp(),
+    submitted_by: (useAuthStore().user?.id as number).toString(),
+  };
 
-  let payload = new FormData()
 
-  let submitted_on = getDateTime()
-
-  payload.append('vehicle_id', (localInspection.value?.vehicle_id as number).toString())
-  // payload.append('started_on', (localInspection.value?.vehicle_id as number).toString())
-  payload.append('inspection_form_id', (selectedForm.value?.id as number).toString())
-  payload.append('submitted_on', submitted_on)
-  payload.append('items', JSON.stringify(items))
-  payload.append('submitted_by', (useAuthStore().user?.id as number).toString())
-
-  let photoKeys = Object.keys(photos.value)
-
-  payload.append('fileKeys', JSON.stringify(photoKeys))
-
-  photoKeys.forEach((key) => {
-    photos.value[key].forEach((file) => {
-      payload.append(`file-${key}[]`, file)
-    })
-  })
-
+  // Emit the payload along with the inspection ID
   emit('save', payload);
-  emit('update:modelValue', false);
-  emit('close');
-};
-
-const updateModelValue = (value: boolean) => {
-  emit('update:modelValue', value);
+  closeDialog()
 };
 
 const closeDialog = () => {
-  emit('update:modelValue', false);
+  dialog.value = false
   emit('close');
 };
 
 const resetForm = () => {
-  step.value = 1
-  localInspection.value = {}
-}
-
-const customFilter = (value: string, query: string, item: any): boolean => {
-  const searchText = query.toLowerCase();
-  return item.raw.name.toLowerCase().includes(searchText) || item.raw.id == searchText
+  selectedForm.value = null;
+  vehicleId.value = null
+  inspectionFormId.value = null
+  selectedForm.value = null
+  responses.value = {};
+  startTime.value = null
 };
+
+// const customFilter = (value: string, query: string, item: any): boolean => {
+//   const searchText = query.toLowerCase();
+//   return item.raw.name.toLowerCase().includes(searchText) || item.raw.id == searchText
+// };
 </script>
 
 <style scoped></style>

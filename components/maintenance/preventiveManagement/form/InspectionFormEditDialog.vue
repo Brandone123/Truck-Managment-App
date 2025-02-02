@@ -42,12 +42,11 @@
             </div>
           </div>
           <div v-if="step == 2">
-            <FormBuilder v-model="localForm.elements" @update:validity="elementsValid = $event" />
+            <FormBuilder v-model="elements" @update:validity="elementsValid = $event" />
           </div>
           <div v-if="step == 3">
             <v-card-text>
-              <WorkflowPreview v-model="localForm.workflows" :inspectionItems="localForm.elements"
-                :inspectionWorkflows="localForm.workflows" />
+              <WorkflowPreview v-model="workflows" :inspectionItems="elements" :inspectionWorkflows="workflows" />
             </v-card-text>
           </div>
         </v-form>
@@ -79,14 +78,16 @@ const props = defineProps({
     required: true,
   },
   form: {
-    type: Object as PropType<InspectionForm>,
+    type: Object as PropType<Partial<InspectionForm>>,
     default: () => ({
       id: null,
       name: '',
       type: '',
       status: 'Draft',
-      elements: [],
-      workflows: []
+      current_version: {
+        elements: [],
+        workflows: []
+      }
     })
   },
 });
@@ -101,10 +102,42 @@ const title = computed(() => (props.form && props.form.id ? 'Edit Inspection For
 
 const inspectionForm = ref<HTMLFormElement | null>(null);
 
+
+const workflows = computed({
+  get() {
+    return localForm.value.current_version?.workflows || []
+  },
+  set(val) {
+    if (!localForm.value.current_version) {
+      localForm.value.current_version = { elements: [], workflows: [] } as any
+    }
+    localForm.value.current_version!.workflows = val
+  }
+})
+
+const elements = computed({
+  get() {
+    return localForm.value.current_version?.elements || []
+  },
+  set(val) {
+    if (!localForm.value.current_version) {
+      localForm.value.current_version = { elements: [], workflows: [] } as any
+    }
+    localForm.value.current_version!.elements = val
+  }
+})
+
 const elementsValid = ref<boolean>(false);
 
 const saveForm = () => {
-  emit('save', localForm.value);
+  let payload = {
+    id: localForm.value.id,
+    name: localForm.value.name,
+    status: localForm.value.status,
+    workflows: workflows.value,
+    elements: elements.value
+  }
+  emit('save', payload);
   emit('update:modelValue', false);
   emit('close');
 };
@@ -129,7 +162,7 @@ const nextStep = async () => {
       return
     }
   } if (step.value == 2) {
-    if (localForm.value.elements.length == 0 || !formStatus.valid) {
+    if (localForm.value.current_version?.elements.length == 0 || !formStatus.valid) {
       return
     }
   }
@@ -150,12 +183,13 @@ watch([modelValue, form], ([newModelValue, newForm]) => {
 const resetForm = () => {
   step.value = 1
   localForm.value = {
-    id: null,
     name: '',
     type: '',
     status: 'Draft',
-    elements: [],
-    workflows: []
+    current_version: {
+      elements: [],
+      workflows: []
+    } as any,
   }
 }
 const formTypes = [{ title: 'Daily', value: 'daily' }, { title: 'Pre-Trip', value: 'pre-trip' }, { title: 'Post-Trip', value: 'post-trip' }];

@@ -5,50 +5,76 @@
         <v-tab value="all" class="text-none">All</v-tab>
         <v-tab value="pending" class="text-none">
           <span class="mr-1 bg-secondary" style="width: 8px; height: 8px; border-radius: 50%;"></span> Pending
-          <v-chip density="compact" class="ml-1 bg-secondary">{{ pendingCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-secondary">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ inspectionSummary?.pending || 0 }}</span>
+          </v-chip>
+        </v-tab>
+
         <v-tab value="passed" class="text-none">
           <span class="mr-1 bg-primary" style="width: 8px; height: 8px; border-radius: 50%;"></span> Passed
-          <v-chip density="compact" class="ml-1 bg-primary">{{ passedCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-primary">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ inspectionSummary?.passed || 0 }}</span>
+          </v-chip></v-tab>
         <v-tab value="failed" class="text-none"><span class="mr-1 bg-error"
             style="width: 8px; height: 8px; border-radius: 50%;"></span>Failed
-          <v-chip density="compact" class="ml-1 bg-error">{{ failedCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-error">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ inspectionSummary?.failed || 0 }}</span>
+          </v-chip></v-tab>
       </v-tabs>
     </div>
 
-    <SharedUiCustomTable items-per-page="50" :sticky-top="true" :sticky-top-offset="95" show-select
+    <SharedUiServerTable class="custom-table" :sticky-top="true" :sticky-top-offset="94" show-select
       :filters="filterAssets" :showFooterInHead="false" :headers="tableHeaders" :items="filteredInspections"
-      :loading="loading">
+      :loading="loading" @update:selectedFilters="selectedFilters = $event" :selectable="true" v-model="selectedItems"
+      return-object :items-per-page="pagination.itemsPerPage" :sort-by="pagination.sortBy" :items-length="total_items"
+      @update:options="pagination = $event" @hoveredRow="hoveredRow = $event;">
 
       <template v-slot:item.id="{ item }">
-        <span style="cursor: pointer;" class="text-primary font-weight-bold" dense @click="$emit('view', item)">
+        <span style="cursor: pointer;" class="text-primary font-weight-bold" dense
+          @click="$emit('viewDetails', item.id)">
           {{ item.id }}
         </span>
       </template>
+      <!-- <template v-slot:item.inspection_form_id="{ item }">
+        {{ item.related_inspection_form
+          ?.name || getFormName(item.inspection_form_id) }}
 
-      <template v-slot:item.inspection_form_id="{ item }">
-        {{ getFormName(item.inspection_form_id) }}
+      </template> -->
+
+      <template v-slot:item.submitted_by_user="{ item }">
+        <!-- {{ item.submitted_by_user?.name }} -->
+        <SharedTableDynamicTechnicianItem :technician="item.submitted_by_user" />
       </template>
 
       <template v-slot:item.status="{ item }">
-        <v-chip density="compact" variant="flat" :color="getStatusColor(item.status)">
-          {{ item.status.charAt(0).toUpperCase() + item.status.slice(1) }}
+        <v-chip density="compact" variant="flat" class="text-capitalize" :color="getStatusColor(item.status)">
+          {{ item.status }}
         </v-chip>
       </template>
-      <template v-slot:item.actions="{ item }">
-        <v-icon class="ml-2" color="primary" @click="$emit('view', item)">mdi-eye</v-icon>
-        <v-icon class="ml-2" color="primary" @click="$emit('edit', item)">mdi-pencil</v-icon>
-        <v-icon class="ml-2" color="red" @click="$emit('delete', item.id)">mdi-delete</v-icon>
+      <template v-slot:item.actions="{ item, index }">
+        <SharedTableActionMenu :hoveredRow="hoveredRow" :index="index">
+          <v-list-item @click="$emit('viewDetails', item.id)" append-icon="mdi-eye">View</v-list-item>
+          <!-- <v-list-item @click="$emit('edit', item)" append-icon="mdi-pencil">Edit</v-list-item> -->
+          <v-list-item @click="$emit('delete', item.id)" append-icon="mdi-delete">Delete</v-list-item>
+        </SharedTableActionMenu>
       </template>
       <!-- Slot to capture bulk actions -->
       <template v-slot:bulkActions="{ selectedItems }" class="mr-2">
-        <v-btn color="primary" class="text-none mr-2" @click="">
-          <!-- <v-icon>mdi-printer</v-icon> -->
+        <!-- <v-btn color="primary" class="text-none mr-2" @click="">]
           Export Selected
-        </v-btn>
+        </v-btn> -->
       </template>
+
       <template v-slot:item.vehicle_id="{ item }">
-        <SharedTableVehicleItem :value="item.vehicle_id" type="id" />
+        <SharedTableDynamicVehicleItem :vehicle="item.vehicle" />
       </template>
+
       <template v-slot:item.submitted_on="{ item }">
         <span style="cursor: pointer; border-bottom: 1px dotted; font-size: small">
           {{ new Date(item.submitted_on).toLocaleDateString('en-US',
@@ -58,29 +84,47 @@
           {{ getRelativeDateTime(item.submitted_on) }}
         </v-tooltip>
       </template>
+
       <template v-slot:item.failed_items="{ item }">
-        <div v-if="item.failed_items?.length" v-for="(fail) in item.failed_items">
-          <span>{{ fail }}</span>
+        <div v-if="item.failed_items.length">
+          <div v-if="item.failed_items.length <= 2" v-for="(failed_item, i) in item.failed_items" :key="i">
+            <span>{{ failed_item.item }}</span>
+          </div>
+
+          <div v-else>
+            <div v-for="(failed_item, i) in item.failed_items.slice(0, 2)" :key="i">
+              <span>{{ failed_item.item }}</span>
+            </div>
+            <div class="text-primary">+ {{ item.failed_items.length - 2 }} more</div>
+          </div>
         </div>
-        <span v-else>N/A</span>
+        <span v-else>--</span>
       </template>
-    </SharedUiCustomTable>
+    </SharedUiServerTable>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import type { Inspection } from '@/types/maintenance/inspection';
-import type { filterItem } from '~/types/layout/table';
 import moment from 'moment'
 
 const inspectionFormStore = useInspectionFormStore();
-
 const { forms } = storeToRefs(inspectionFormStore);
 
-const getFormName = (form_id: number) => {
-  return forms.value.find(form => form.id == form_id)?.name;
-}
+const inspectionStore = useInspectionStore();
+const {
+  loadingSummary,
+  total_items,
+  pagination: inspectionPagination,
+  loading,
+  inspectionSummary,
+  getInspectionsList
+} = storeToRefs(inspectionStore);
+
+// const getFormName = (form_id: number) => {
+//   return forms.value.find(form => form.id == form_id)?.name;
+// }
 
 const props = defineProps({
   inspections: {
@@ -93,8 +137,12 @@ const props = defineProps({
   },
 });
 
+const selectedItems = ref<Array<any>>([])
+const selectedFilters = ref<Record<string, string>>({})
+const hoveredRow = ref<number | null>(null)
+
 const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
+  switch ((status || '').toLowerCase()) {
     case 'pending':
       return 'secondary';
     case 'passed':
@@ -105,51 +153,51 @@ const getStatusColor = (status: string) => {
 }
 
 const tableHeaders = [
+  { title: 'Inspection ID', key: 'id' },
   { title: 'Vehicle', key: 'vehicle_id' },
   // { title: 'Inspection ID', key: 'id' },
   { title: 'Submitted', key: 'submitted_on' },
   { title: 'Duration (Mins)', key: 'duration_minutes' },
   {
-    title: 'Inspaction Form',
-    key: 'inspection_form_id',
-    render: (value: any) => {
-      return getFormName(value)
-    }
+    title: 'Inspection Form',
+    key: 'inspection_form.name',
+    // render: (value: any) => {
+    //   return getFormName(value)
+    // }
   },
   {
     title: 'Submitted By',
-    key: 'submitted_by_user.name',
-    render: (value: any) => {
-      if (value) {
-        return `<b>${value}</b>`;
-      } else {
-        return 'N/A';
-      }
-    }
+    key: 'submitted_by_user',
+    // render: (value: any) => {
+    //   if (value) {
+    //     return `<b>${value}</b>`;
+    //   } else {
+    //     return 'N/A';
+    //   }
+    // }
   },
   { title: 'Failed Items', key: 'failed_items' },
   { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: '', key: 'actions', sortable: false, minWidth: '50', align: 'end' },
 ];
 
 const filterAssets = computed(() => {
   return [
     {
       title: 'Form',
-      key: 'type',
-      // items: [{ text: 'Daily', value: 'daily' }, { text: 'Pre-Trip', value: 'pre-trip' }, { text: 'Post-Trip', value: 'post-trip' }],
-      items: forms.value.map(form => { return { text: form.name, value: form.id } }) as any[] || [],
+      key: 'inspection_form_id',
+      items: forms.value.map(form => ({ text: form.name, value: form.id })),
       width: '300px',
     },
-  ] as filterItem[]
+  ]
 })
 
 const assetStore = useAssetStore();
 const { assetList } = storeToRefs(assetStore);
 
-const getVehicle = (vehicleId: any) => {
-  return assetList.value.find((vehicle) => vehicle.id === vehicleId)
-}
+// const getVehicle = (vehicleId: any) => {
+//   return inspections.value.find((vehicle) => vehicle.id === vehicleId)
+// }
 
 const getRelativeDateTime = (dateString: any) => {
   return moment(dateString)?.fromNow()
@@ -158,21 +206,80 @@ const getRelativeDateTime = (dateString: any) => {
 const activeFilter = ref<string>('all')
 
 const filteredInspections = computed(() => {
-  if (activeFilter.value == 'all') {
-    return props.inspections
+  if (activeFilter.value == "all") {
+    return getInspectionsList.value;
   }
-  return props.inspections.filter(item => (item.status||'').toLowerCase() == (activeFilter.value || '').toLowerCase())
+  return getInspectionsList.value.filter(
+    (item) => item.status == activeFilter.value
+  );
+});
+
+const pagination = computed({
+  get() {
+    return inspectionPagination.value
+  },
+  set(value) {
+    inspectionStore.setPagination(value);
+  }
 })
 
-const pendingCount = computed(() => {
-  return props.inspections?.filter(item => (item.status||'').toLowerCase() == 'pending')?.length || 0
+const searchQuery = computed(() => {
+  let payload: Record<string, any> = {
+    page: pagination.value.page,
+    items_per_page: pagination.value.itemsPerPage,
+  }
+
+  if (pagination.value.sortBy.length > 0) {
+    payload['sort_by'] = pagination.value.sortBy[0]
+  }
+
+  if (Boolean(pagination.value.search)) {
+    payload['search'] = pagination.value.search
+  }
+
+  payload['filters'] = {}
+
+  if (Object.keys(selectedFilters.value).length > 0) {
+    payload['filters'] = selectedFilters.value
+  }
+
+  if (activeFilter.value != 'all') {
+    payload['filters'].status = activeFilter.value
+  }
+
+  return payload
 })
 
-const passedCount = computed(() => {
-  return props.inspections?.filter(item => (item.status||'').toLowerCase() == 'passed')?.length || 0
+onMounted(() => {
+  inspectionFormStore.fetchForms({})
+  inspectionStore.fetchInspections(searchQuery.value);
 })
 
-const failedCount = computed(() => {
-  return props.inspections?.filter(item => (item.status||'').toLowerCase() == 'failed')?.length || 0
+
+watch(() => selectedFilters.value, () => {
+  selectedItems.value = [];
+  inspectionStore.fetchInspections(searchQuery.value);
+}, { deep: true })
+
+watch(() => pagination.value, (newVal, oldVal) => {
+  if (!_isEqual(newVal, oldVal)) {
+    selectedItems.value = [];
+    inspectionStore.fetchInspections(searchQuery.value);
+  }
+}, { deep: true })
+
+watch(() => activeFilter.value, () => {
+  selectedItems.value = [];
+  inspectionStore.fetchInspections(searchQuery.value);
 })
 </script>
+
+
+<style scoped>
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) th:last-child),
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) td:last-child) {
+  position: sticky;
+  right: 0;
+  width: 20px;
+}
+</style>

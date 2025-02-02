@@ -1,8 +1,8 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="updateModelValue" scrollable max-width="600px">
+  <v-dialog :modelValue="modelValue" @update:modelValue="updateModelValue" scrollable max-width="600px">
     <v-card>
       <v-toolbar color="primary" dark density="compact">
-        <v-toolbar-title>Import Inspections</v-toolbar-title>
+        <v-toolbar-title>Import Service Program</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn icon @click="closeDialog">
           <v-icon>mdi-close</v-icon>
@@ -11,7 +11,7 @@
       <v-card-text>
         <v-select v-model="selectedType" :items="importTypes" label="Select Import Type" variant="outlined"
           prepend-icon="mdi-file-edit-outline"></v-select>
-        <v-file-input v-model="files" variant="outlined" label="Select CSV File" prepend-icon="mdi-cloud-upload-outline"
+        <v-file-input v-model="files" label="Select CSV File" prepend-icon="mdi-cloud-upload-outline" variant="outlined"
           accept=".csv"></v-file-input>
       </v-card-text>
       <v-divider></v-divider>
@@ -27,7 +27,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { defineProps, defineEmits } from 'vue';
-import { useInspectionStore } from '@/stores/maintenance/inspection';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -36,14 +35,14 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'imported']);
 
 const files = ref<File[]>([]);
+
+const serviceProgramStore = useServiceProgramStore();
+const layoutStore = useLayoutStore();
 const selectedType = ref<string>('tms'); // Default value
 const importTypes = [
   { title: 'Fleetio', value: 'fleetio' },
   { title: 'TMS', value: 'tms' }
 ];
-
-const inspectionStore = useInspectionStore();
-const layoutStore = useLayoutStore();
 
 const updateModelValue = (value: boolean) => {
   emit('update:modelValue', value);
@@ -58,15 +57,15 @@ const uploadFile = async () => {
     const formData = new FormData();
 
     formData.append('file', files.value[0]); // Select the first file
-    formData.append('importType', selectedType.value); // Append selected import type
+    formData.append('importType', selectedType.value);
 
     try {
       layoutStore.setOverlay(true);
-      await inspectionStore.inspectionImport(formData);
-      layoutStore.setStatusMessage('Inspection imported successfully', 'primary');
+      await serviceProgramStore.importProgram(formData);
+      layoutStore.setStatusMessage('Service Program imported successfully', 'primary');
       emit('imported');
     } catch (error) {
-      layoutStore.setStatusMessage('Failed to import issues', 'error');
+      layoutStore.setStatusMessage('Failed to import service program', 'error');
       console.error('Upload error:', error);
     } finally {
       layoutStore.setOverlay(false);

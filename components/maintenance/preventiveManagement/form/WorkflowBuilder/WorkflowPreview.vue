@@ -3,7 +3,7 @@
         <div class="d-flex justify-center">
             <div style="max-width: 1200px" class="d-flex justify-end">
                 <WorkflowBuilder :item="selectedWorkflow" @add="addWorkflow" @saveEdit="saveWorkflowEdit"
-                    :dialog="workflowBuildDialog" @updateDialog="workflowBuildDialog = $event" :inspectionItems="inspectionItems" :inspectionWorkflows="inspectionWorkflows"/>
+                    v-model="workflowBuildDialog" :inspectionItems="inspectionItems" :inspectionWorkflows="inspectionWorkflows"/>
             </div>
         </div>
         <div class="d-flex justify-center">

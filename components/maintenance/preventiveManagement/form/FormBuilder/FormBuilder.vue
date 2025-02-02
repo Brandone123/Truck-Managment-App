@@ -1,5 +1,5 @@
 <template>
-    <div class="d-flex flex-grow-1" id="form-builder">
+    <div class="d-flex flex-grow-1" id="form-builder" :style="{ height: height }">
         <div id="form-content">
             <div class="d-flex justify-center pt-10" v-if="!form.length">
                 <v-card>
@@ -136,6 +136,10 @@ const props = defineProps({
         required: true,
         default: [],
     },
+    height: {
+        required: false,
+        default: 'calc(100vh - (48px + 72px + 52px))'
+    }
 })
 
 const emit = defineEmits(['update:modelValue', 'update:validity'])
@@ -346,7 +350,6 @@ const copyComponent = (index: number) => {
 
 <style scoped>
 #form-builder {
-    height: calc(100vh - (48px + 72px + 52px));
     flex-direction: row;
     position: relative;
     flex: 1 1;

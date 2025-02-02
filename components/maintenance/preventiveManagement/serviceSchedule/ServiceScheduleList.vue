@@ -5,139 +5,57 @@
         <v-tab value="all" class="text-none">All</v-tab>
         <v-tab value="Upcoming" class="text-none">
           <span class="mr-1 bg-pink" style="width: 8px; height: 8px; border-radius: 50%;"></span> Upcoming
-          <v-chip density="compact" class="ml-1 bg-pink">{{ UpcomingCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-pink">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ serviceScheduleSummary?.Upcoming || 0 }}</span>
+          </v-chip></v-tab>
         <v-tab value="Overdue" class="text-none">
           <span class="mr-1 bg-orange" style="width: 8px; height: 8px; border-radius: 50%;"></span> Overdue
-          <v-chip density="compact" class="ml-1 bg-orange">{{ OverdueCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-orange">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ serviceScheduleSummary?.Overdue || 0 }}</span>
+          </v-chip></v-tab>
         <v-tab value="Completed" class="text-none"><span class="mr-1 bg-primary"
             style="width: 8px; height: 8px; border-radius: 50%;"></span>Completed
-          <v-chip density="compact" class="ml-1 bg-primary">{{ CompletedCount }}</v-chip></v-tab>
+          <v-chip density="compact" class="ml-1 bg-primary">
+            <v-progress-circular v-if="loadingSummary" :size="20" :width="2" color="white"
+              indeterminate></v-progress-circular>
+            <span v-else>{{ serviceScheduleSummary?.Completed || 0 }}</span>
+          </v-chip></v-tab>
       </v-tabs>
     </div>
 
-    <SharedUiCustomTable show-select :showFooterInHead="false" :headers="tableHeaders"
-      :items="filteredSchedule" :loading="loading">
-      <template v-slot:item.actions="{ item }">
-        <v-icon class="ml-2" color="primary" @click="$emit('view', item)">mdi-eye</v-icon>
-        <v-icon class="ml-2" color="primary" @click="$emit('edit', item)">mdi-pencil</v-icon>
-        <v-icon class="ml-2" color="red" @click="$emit('delete', item.id)">mdi-delete</v-icon>
+    <SharedUiServerTable class="custom-table" show-select :showFooterInHead="false" :headers="tableHeaders" :items="filteredSchedule"
+      :loading="loading" @update:selectedFilters="selectedFilters = $event" :selectable="true" v-model="selectedItems"
+      return-object :items-per-page="pagination.itemsPerPage" :sort-by="pagination.sortBy" :items-length="total_items"
+      @update:options="pagination = $event" @hoveredRow="hoveredRow = $event;">
+      <template v-slot:item.actions="{ item, index }">
+        <SharedTableActionMenu :hoveredRow="hoveredRow" :index="index">
+          <v-list-item @click="$emit('view', item.id)" append-icon="mdi-eye">View</v-list-item>
+          <v-list-item @click="$emit('edit', item)" append-icon="mdi-pencil">Edit</v-list-item>
+          <v-list-item @click="$emit('delete', item.id)" append-icon="mdi-delete">Delete</v-list-item>
+        </SharedTableActionMenu>
+      </template>
+      <template v-slot:item.id="{ item }">
+        <span style="cursor: pointer;" class="text-primary font-weight-bold" dense @click="$emit('view', item.id)">
+          {{ item.id }}
+        </span>
       </template>
       <template v-slot:item.vehicle_id="{ item }">
-        <v-menu location="bottom" max-height="400px" width="350px" location-strategy="connected" class="rounded" open-on-hover>
-          <template v-slot:activator="{ props }">
-            <div class="d-flex">
-              <div>
-                <div class="rounded position-relative"
-                  style="display: flex; justify-content: center; align-items: center; width: 28px; height: 28px; background-color: grey; color: white; text-align: center; position: relative;">
-                  <span style="font-size:xx-small;" v-if="getVehicleName(item.vehicle_id)?.type">{{
-                    getVehicleName(item.vehicle_id)?.type.slice(0, 3).toUpperCase() }}</span>
-                  <span v-else style="font-size:xx-small;">VHI</span>
-                  <div v-if="getVehicleName(item.vehicle_id)?.status"
-                    :class="`${'bg-' + getVehicleStatusColor(getVehicleName(item.vehicle_id)?.status)}`"
-                    style="width: 10px; height: 10px; position: absolute; bottom: -2px; right: -2px; border-radius: 50%;">
-                  </div>
-                </div>
-              </div>
-              <div class="ml-2">
-                <span class="text-secondary" v-bind="props"
-                  style="cursor: pointer; border-bottom: 1px dotted; justify-content: center; align-items: center;text-align: center;"
-                  @click="viewVehicleDetails(getVehicleName(item.vehicle_id)?.id)">
-                  {{ getVehicleName(item.vehicle_id)?.name }}
-                </span>
-              </div>
-            </div>
-          </template>
-          <v-row no-gutters>
-            <v-col cols="12">
-              <v-card class="rounded-lg">
-                <v-card-text>
-                  <div class="mb-3">
-                    <div class="d-flex mb-2" style="align-items: center;">
-                      <div>
-                        <div class="rounded position-relative"
-                          style="display: flex; justify-content: center; align-items: center; width: 45px; height: 45px; background-color: grey; color: white; text-align: center; position: relative;">
-                          <span style="font-size: large;">{{ getVehicleName(item.vehicle_id)?.type.slice(0, 3) }}</span>
-                        </div>
-                      </div>
-                      <div class="ml-2">
-                        <span class="text-secondary" v-bind="props">
-                          {{ getVehicleName(item.vehicle_id)?.name }}
-                        </span>
-                      </div>
-                    </div>
-                    <v-row>
-                      <v-col cols="12" md="6">Status</v-col>
-                      <v-col cols="12" md="6" v-if="getVehicleName(item.vehicle_id)?.status">
-                        <v-chip density="compact" class="text-capitalize"
-                          :color="getVehicleStatusColor(getVehicleName(item.vehicle_id)?.status)">
-                          {{ getVehicleName(item.vehicle_id)?.status }}
-                        </v-chip>
-                      </v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">Operator</v-col>
-                      <v-col cols="12" md="6">{{ getVehicleName(item.vehicle_id)?.odometer }}</v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">Type</v-col>
-                      <v-col cols="12" md="6">{{ getVehicleName(item.vehicle_id)?.type }}</v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">Year Make Model</v-col>
-                      <v-col cols="12" md="6">
-                        {{ getVehicleName(item.vehicle_id)?.year }}
-                        {{ getVehicleName(item.vehicle_id)?.make }}
-                        {{ getVehicleName(item.vehicle_id)?.model }}
-                      </v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">Group</v-col>
-                      <v-col cols="12" md="6" v-if="getVehicleName(item.vehicle_id)?.dimensions">{{
-                        getVehicleName(item.vehicle_id)?.dimensions.ground_clearance }}</v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">VIN/SN</v-col>
-                      <v-col cols="12" md="6">{{ getVehicleName(item.vehicle_id)?.vin }}</v-col>
-                    </v-row>
-                    <v-divider class="my-2"></v-divider>
-                    <v-row>
-                      <v-col cols="12" md="6">Current Meter</v-col>
-                      <v-col cols="12" md="6">{{ }}</v-col>
-                    </v-row>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-menu>
+        <SharedTableDynamicVehicleItem :vehicle="item.vehicle" v-if="item.vehicle" />
+        <span v-else>N/A</span>
       </template>
+
       <template v-slot:item.program_id="{ item }">
-        <div class="d-flex" style="align-items: center;">
-          <div>
-            <div class="rounded position-relative"
-              style="display: flex; justify-content: center; align-items: center; width: 28px; height: 28px; background-color: grey; color: white; text-align: center; position: relative;">
-              <span style="font-size:xx-small;" v-if="getProgramName(item.program_id)">{{
-                getProgramName(item.program_id)?.slice(0, 3).toUpperCase() }}</span>
-              <span v-else style="font-size:xx-small;">PRO</span>
-            </div>
-          </div>
-          <div>
-            <span class="ml-2 text-secondary"  @click="viewProgramDetails(item.program_id)"
-              style="cursor: pointer; border-bottom: 1px dotted; justify-content: center; align-items: center;text-align: center;">
-              {{ getProgramName(item.program_id) }}
-            </span>
-          </div>
-        </div>
+        <SharedTableDynamicProgramItem :program="item.program" v-if="item.program" />
+        <span v-else>N/A</span>
       </template>
       <template v-slot:item.due_date="{ item }">
         <span style="cursor: pointer; border-bottom: 1px dotted; font-size: small">
-          {{ new Date(item.due_date).toLocaleDateString('en-US', 
-          { month: 'short', day: 'numeric', year: 'numeric' }) }}
+          {{ new Date(item.due_date).toLocaleDateString('en-US',
+            { month: 'short', day: 'numeric', year: 'numeric' }) }}
         </span>
         <v-tooltip activator="parent" location="top">
           {{ getRelativeDateTime(item.due_date) }}
@@ -149,7 +67,7 @@
           }}</v-chip>
         <span v-else></span>
       </template>
-    </SharedUiCustomTable>
+    </SharedUiServerTable>
   </div>
 
 
@@ -160,6 +78,7 @@ import { ref, computed } from 'vue';
 import type { ServiceSchedule } from '@/types/maintenance/serviceSchedule';
 import type { filterItem } from '~/types/layout/table';
 import { useRouter, useRoute } from 'vue-router';
+import { useServiceScheduleStore } from '@/stores/maintenance/serviceSchedule'
 
 const router = useRouter();
 const route = useRoute()
@@ -175,14 +94,25 @@ const props = defineProps({
   },
 });
 
+const serviceScheduleStore = useServiceScheduleStore();
+const {
+  loadingSummary,
+  total_items,
+  pagination: schedulePagination,
+  loading,
+  serviceScheduleSummary,
+  getServiceScheduleList
+} = storeToRefs(serviceScheduleStore)
+const hoveredRow = ref<number | null>(null)
+
 const tableHeaders = [
-  // { title: 'Schedule ID', key: 'id' },
+  { title: 'Schedule ID', key: 'id' },
   // { title: 'Vehicle ID', key: 'vehicle.id' },
   { title: 'Vehicle', key: 'vehicle_id' },
   { title: 'Program Name', key: 'program_id' },
   { title: 'Due Date', key: 'due_date' },
   { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: '', key: 'actions', sortable: false, minWidth: '50', align: 'end' },
 ];
 
 const getRelativeDateTime = (dateString: any) => {
@@ -206,34 +136,13 @@ const getRelativeDateTime = (dateString: any) => {
 const activeFilter = ref<string>('all')
 
 const filteredSchedule = computed(() => {
-  if (activeFilter.value == 'all') {
-    return props.serviceSchedules
+  if (activeFilter.value == "all") {
+    return getServiceScheduleList.value;
   }
-  return props.serviceSchedules.filter(item => (item.status || '') == activeFilter.value)
-})
-
-const UpcomingCount = computed(() => {
-  return props.serviceSchedules?.filter(item => (item.status || '') == 'Upcoming')?.length || 0
-})
-
-const OverdueCount = computed(() => {
-  return props.serviceSchedules?.filter(item => (item.status || '') == 'Overdue')?.length || 0
-})
-
-const CompletedCount = computed(() => {
-  return props.serviceSchedules?.filter(item => (item.status || '') == 'Completed')?.length || 0
-})
-
-// const filterAssets = computed(() => {
-//   return [
-//     {
-//       title: 'Status',
-//       key: 'status',
-//       items: ['Upcoming', 'Overdue', 'Completed'],
-//       width: '300px',
-//     },
-//   ] as filterItem[]
-// })
+  return getServiceScheduleList.value.filter(
+    (item) => item.status == activeFilter.value
+  );
+});
 
 const getStatusColor = (status: string) => {
   switch ((status || '')) {
@@ -253,7 +162,7 @@ const viewVehicleDetails = (vehicleId: any) => {
 }
 
 const viewProgramDetails = (programId: any) => {
-  router.push(`/maintenance/serviceProgram/details/${programId}`)
+  router.push(`ServicePrograms/${programId}`)
 }
 
 const assetStore = useAssetStore();
@@ -262,14 +171,19 @@ const { assetList } = storeToRefs(assetStore);
 const serviceProgramStore = useServiceProgramStore()
 const { servicePrograms } = storeToRefs(serviceProgramStore)
 
+const selectedItems = ref<Array<any>>([])
+const selectedFilters = ref<Record<string, string>>({})
+
 const getVehicleName = (vehicleId: any) => {
   const vehicleName = assetList.value.find((vehicle) => vehicle.id === vehicleId)
   return vehicleName
 }
 
-const getProgramName = (programId: number) => {
-  return servicePrograms.value.find(program => program.id == programId)?.program_name
+const getProgramName = (programId: any) => {
+  const programName = servicePrograms.value.find((program) => program.id === programId)
+  return programName?.program_name
 }
+
 const getVehicleStatusColor = (status: any) => {
   switch ((status || '')) {
     case 'active':
@@ -284,4 +198,70 @@ const getVehicleStatusColor = (status: any) => {
       return 'grey';
   }
 }
+
+const pagination = computed({
+  get() {
+    return schedulePagination.value
+  },
+  set(value) {
+    serviceScheduleStore.setPagination(value);
+  }
+})
+
+const searchQuery = computed(() => {
+  let payload: Record<string, any> = {
+    page: pagination.value.page,
+    items_per_page: pagination.value.itemsPerPage,
+  }
+
+  if (pagination.value.sortBy.length > 0) {
+    payload['sort_by'] = pagination.value.sortBy[0]
+  }
+
+  if (Boolean(pagination.value.search)) {
+    payload['search'] = pagination.value.search
+  }
+
+  payload['filters'] = {}
+
+  if (Object.keys(selectedFilters.value).length > 0) {
+    payload['filters'] = selectedFilters.value
+  }
+
+  if (activeFilter.value != 'all') {
+    payload['filters'].status = activeFilter.value
+  }
+
+  return payload
+})
+
+onMounted(() => {
+  serviceScheduleStore.fetchServiceSchedules(searchQuery.value)
+})
+
+watch(() => selectedFilters.value, () => {
+  selectedItems.value = [];
+  serviceScheduleStore.fetchServiceSchedules(searchQuery.value);
+}, { deep: true })
+
+watch(() => pagination.value, (newVal, oldVal) => {
+  if (!_isEqual(newVal, oldVal)) {
+    selectedItems.value = [];
+    serviceScheduleStore.fetchServiceSchedules(searchQuery.value);
+  }
+}, { deep: true })
+
+watch(() => activeFilter.value, () => {
+  selectedItems.value = [];
+  serviceScheduleStore.fetchServiceSchedules(searchQuery.value);
+})
 </script>
+
+<style scoped>
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) th:last-child),
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) td:last-child) {
+  position: sticky;
+  right: 0;
+  width: 20px;
+}
+</style>

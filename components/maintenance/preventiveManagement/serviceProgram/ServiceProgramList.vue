@@ -1,62 +1,51 @@
 <template>
-  <!-- <SharedUiCustomTable show-select :filters="filterAssets" :showFooterInHead="false" :headers="tableHeaders"
-    :items="servicePrograms" :loading="loading"> -->
-  <SharedUiCustomTable show-select :showFooterInHead="false" :headers="tableHeaders" :items="servicePrograms"
-    :loading="loading">
-    <template v-slot:item.actions="{ item }">
-      <v-icon class="ml-2" color="primary" @click="viewDetails(item.id)">mdi-eye</v-icon>
-      <v-icon class="ml-2" color="primary" @click="$emit('edit', item)">mdi-pencil</v-icon>
-      <v-icon class="ml-2" color="red" @click="$emit('delete', item.id)">mdi-delete</v-icon>
+  <SharedUiServerTable class="custom-table" show-select :showFooterInHead="false" :headers="tableHeaders"
+    :items="servicePrograms" :loading="loading" @update:selectedFilters="selectedFilters = $event" :selectable="true"
+    v-model="selectedItems" return-object :items-per-page="pagination.itemsPerPage" @hoveredRow="hoveredRow = $event;"
+    :sort-by="pagination.sortBy" :items-length="total_items" @update:options="pagination = $event">
+    <template v-slot:item.actions="{ item, index }">
+      <SharedTableActionMenu :hoveredRow="hoveredRow" :index="index">
+        <v-list-item @click="viewDetails(item.id)" append-icon="mdi-eye">View</v-list-item>
+        <v-list-item @click="$emit('edit', item)" append-icon="mdi-pencil">Edit</v-list-item>
+        <v-list-item @click="$emit('delete', item.id)" append-icon="mdi-delete">Delete</v-list-item>
+      </SharedTableActionMenu>
     </template>
-
-    <template v-slot:item.program_name="{ item }">
-      <div class="d-flex" style="align-items: center;">
-        <div>
-          <div class="rounded position-relative"
-            style="display: flex; justify-content: center; align-items: center; width: 28px; height: 28px; background-color: grey; color: white; text-align: center; position: relative;">
-            <span style="font-size:xx-small;" v-if="item.program_name">{{
-              item.program_name.slice(0, 3).toUpperCase() }}</span>
-            <span v-else style="font-size:xx-small;">PRO</span>
-          </div>
-        </div>
-        <div>
-          <span class="ml-2" v-bind="props"
-            style="justify-content: center; align-items: center;text-align: center;">
-            {{ item.program_name }}
-          </span>
-        </div>
-      </div>
+    <template v-slot:item.id="{ item }">
+      <span style="cursor: pointer;" class="text-primary font-weight-bold" dense @click="viewDetails(item.id)">
+        {{ item.id }}
+      </span>
     </template>
+    <!-- <template v-slot:item.program_name="{ item }">
+      <SharedTableDynamicServiceProgram :program ="item.service_program"/>
+    </template> -->
 
-    <!-- Slot to capture bulk actions -->
     <template v-slot:bulkActions="{ selectedItems }" class="mr-2">
-      <v-btn color="primary" class="text-none mr-2" @click="">
-        <!-- <v-icon>mdi-printer</v-icon> -->
+      <!-- <v-btn color="primary" class="text-none mr-2" @click="">
         Export Selected
-      </v-btn>
+      </v-btn> -->
     </template>
-    <template v-slot:item.subscribed_vehicles.length="{ item }">
-        <span @click="viewTabDetails(item.id, 'vehicle')"
-        style="cursor: pointer; border-bottom: 1px dotted;" class="text-secondary font-weight-bold" dense>
-          {{ item.subscribed_vehicles.length }}
-        </span>
+    <template v-slot:item.vehicles="{ item }">
+      <span @click="viewTabDetails(item.id, 'vehicle')" style="cursor: pointer; border-bottom: 1px dotted;"
+        class="text-secondary font-weight-bold" dense>
+        {{ item.vehicles?.length || 0 }}
+      </span>
     </template>
-    <template v-slot:item.subscribed_tasks.length="{ item }">
-        <span @click="viewTabDetails(item.id, 'overview')"
-        style="cursor: pointer; border-bottom: 1px dotted;" class="text-secondary font-weight-bold" dense>
-          {{ item.subscribed_tasks.length }}
-        </span>
+    <template v-slot:item.program_schedules="{ item }">
+      <span @click="viewTabDetails(item.id, 'overview')" style="cursor: pointer; border-bottom: 1px dotted;"
+        class="text-secondary font-weight-bold" dense>
+        {{ item.program_schedules?.flatMap((v: any) => v.service_tasks.map((task: any) => task.id)).length || 0 }}
+      </span>
     </template>
     <template v-slot:item.primary_meter_utilization="{ item }">
-      <span>{{ item.primary_meter_utilization.charAt(0).toUpperCase() + item.primary_meter_utilization.slice(1) }}</span>
+      <span>{{ item.primary_meter_utilization.charAt(0).toUpperCase() + item.primary_meter_utilization.slice(1)
+        }}</span>
     </template>
-  </SharedUiCustomTable>
+  </SharedUiServerTable>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import type { ServiceProgram } from '@/types/maintenance/ServiceProgram';
-import type { filterItem } from '~/types/layout/table';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -71,45 +60,93 @@ const props = defineProps({
     default: false,
   },
 });
+const hoveredRow = ref<number | null>(null)
 
 const tableHeaders = [
-  // { title: 'Program ID', key: 'id' },
+  { title: 'Program ID', key: 'id' },
   { title: 'Program Name', key: 'program_name' },
-  // { title: 'Description', key: 'description' },
-  { title: 'Number of Tasks', key: 'subscribed_tasks.length' },
-  { title: 'Number of Vehicles', key: 'subscribed_vehicles.length' },
+  { title: 'Description', key: 'description' },
+  { title: 'Number of Tasks', key: 'program_schedules' },
+  { title: 'Number of Vehicles', key: 'vehicles' },
   { title: 'Primary Meter', key: 'primary_meter_utilization' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: '', key: 'actions', sortable: false, width: '200px', align: 'end' },
 ];
 
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return 'primary';
-    case 'inactive':
-      return 'error';
-    default:
-      return 'grey'
-  }
-}
+const serviceProgramStore = useServiceProgramStore();
+const { servicePrograms, total_items, pagination: programPagination, serviceProgramsSummary } = storeToRefs(serviceProgramStore);
 
+const selectedItems = ref<Array<any>>([])
+const selectedFilters = ref<Record<string, string>>({})
+const activeFilter = ref<string>('all')
 
 const viewDetails = (programId: number) => {
-  router.push(`serviceProgram/details/${programId}`)
+  router.push(`ServicePrograms/${programId}`)
 }
 
 const viewTabDetails = (programId: number, tab: string) => {
-  router.push(`serviceProgram/details/${programId}?tab=${tab}`)
+  router.push(`ServicePrograms/${programId}?tab=${tab}`)
 }
 
-// const filterAssets = computed(() => {
-//   return [
-//     {
-//       title: 'Status',
-//       key: 'status', 
-//       items: ['Active', 'Inactive'],
-//       width: '300px',
-//     },
-//   ] as filterItem[]
-// })
+const pagination = computed({
+  get() {
+    return programPagination.value
+  },
+  set(value) {
+    serviceProgramStore.setPagination(value);
+  }
+})
+
+const searchQuery = computed(() => {
+  let payload: Record<string, any> = {
+    page: pagination.value.page,
+    items_per_page: pagination.value.itemsPerPage,
+  }
+
+  if (pagination.value.sortBy.length > 0) {
+    payload['sort_by'] = pagination.value.sortBy[0]
+  }
+
+  if (Boolean(pagination.value.search)) {
+    payload['search'] = pagination.value.search
+  }
+
+  payload['filters'] = {}
+
+  if (Object.keys(selectedFilters.value).length > 0) {
+    payload['filters'] = selectedFilters.value
+  }
+
+  return payload
+})
+
+onMounted(() => {
+  serviceProgramStore.fetchServicePrograms(searchQuery.value)
+})
+
+watch(() => selectedFilters.value, () => {
+  selectedItems.value = [];
+  serviceProgramStore.fetchServicePrograms(searchQuery.value);
+}, { deep: true })
+
+watch(() => pagination.value, (newVal, oldVal) => {
+  if (!_isEqual(newVal, oldVal)) {
+    selectedItems.value = [];
+    serviceProgramStore.fetchServicePrograms(searchQuery.value);
+  }
+}, { deep: true })
+
+watch(() => activeFilter.value, () => {
+  selectedItems.value = [];
+  serviceProgramStore.fetchServicePrograms(searchQuery.value);
+})
 </script>
+
+
+<style scoped>
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) th:last-child),
+.custom-table ::v-deep(.v-table__wrapper tr:not(.v-data-table-progress):not(.v-data-table-rows-loading) td:last-child) {
+  position: sticky;
+  right: 0;
+  width: 20px;
+}
+</style>

@@ -1,5 +1,5 @@
 <template>
-    <v-dialog max-width="900px" v-model="show" scrollable>
+    <v-dialog max-width="900px" v-model="dialog" scrollable>
         <template v-slot:activator="{ props }">
             <v-btn color="primary" density="comfortable" flat v-bind="props" class="text-none">
                 <v-icon>mdi-plus</v-icon>
@@ -10,7 +10,7 @@
             <v-toolbar color="primary" dark density="compact">
                 <v-toolbar-title>{{ title }}</v-toolbar-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="closeDialog">
+                <v-btn icon @click="close">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-toolbar>
@@ -222,7 +222,7 @@
                                                 </span>
 
                                                 <v-chip density="compact"
-                                                    v-if="editedWorkflow.trigger.selected == 'form_submitted'">Not
+                                                    v-if="editedWorkflow.trigger.selected == 'form_submitted' || editedWorkflow.trigger.selected == 'item_pass'">Not
                                                     Available</v-chip>
                                                 <v-icon color="primary"
                                                     v-if="editedWorkflow.actions.create_an_issue.active">mdi-check-circle-outline</v-icon>
@@ -255,7 +255,7 @@
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
-                <v-btn variant="text" color="primary" @click="closeDialog">Cancel</v-btn>
+                <v-btn variant="text" color="primary" @click="close">Cancel</v-btn>
                 <v-spacer></v-spacer>
                 <v-btn variat="text" color="primary" @click="save">Save</v-btn>
             </v-card-actions>
@@ -275,7 +275,7 @@ const validation = useValidation();
 const technicianStore = useTechniciansStore()
 const { technicians } = storeToRefs(technicianStore)
 
-const emit = defineEmits(['add', 'saveEdit', 'updateDialog'])
+const emit = defineEmits(['add', 'saveEdit', 'update:modelValue'])
 
 const props = defineProps({
     item: {
@@ -318,7 +318,7 @@ const props = defineProps({
         default: [],
     },
 
-    dialog: {
+    modelValue: {
         type: Boolean,
         required: true,
     }
@@ -326,10 +326,10 @@ const props = defineProps({
 
 const workflowForm = ref<HTMLFormElement | null>(null)
 
-const editedWorkflow = ref<Workflow>(JSON.parse(JSON.stringify(props.item)))
+const editedWorkflow = ref<Workflow>(JSON.parse(JSON.stringify({ ...props.item })))
 watch(() => props.item,
     () => {
-        editedWorkflow.value = JSON.parse(JSON.stringify(props.item));
+        editedWorkflow.value = JSON.parse(JSON.stringify({ ...props.item }));
     },
     { deep: true }
 );
@@ -468,7 +468,7 @@ const save = async () => {
     else {
         emit('add', JSON.parse(JSON.stringify(editedWorkflow.value)))
     }
-    closeDialog()
+    close()
 }
 
 const resetErrorMessages = () => {
@@ -476,23 +476,23 @@ const resetErrorMessages = () => {
     actionSelectionErrorMessage.value = ""
 }
 
-const show = computed({
+const dialog = computed({
     get() {
-        return props.dialog
+        return props.modelValue
     },
     set(value) {
-        emit('updateDialog', value)
+        emit('update:modelValue', value)
     }
 })
 
-watch(() => show.value, (newVal) => {
+watch(() => dialog.value, (newVal) => {
     resetErrorMessages()
     workflowForm.value?.resetValidation()
 })
 
 
-const closeDialog = () => {
-    show.value = false
+const close = () => {
+    dialog.value = false
 }
 
 const customFilter = (value: string, query: string, item: any): boolean => {
@@ -517,7 +517,7 @@ const toggleSendEmailActionStatus = () => {
 }
 
 const toggleCreateIssueActionStatus = () => {
-    if (editedWorkflow.value.trigger.selected == 'form_submitted') {
+    if (editedWorkflow.value.trigger.selected == 'form_submitted' || editedWorkflow.value.trigger.selected == 'item_pass') {
         editedWorkflow.value.actions.create_an_issue.active = false
     }
     else {

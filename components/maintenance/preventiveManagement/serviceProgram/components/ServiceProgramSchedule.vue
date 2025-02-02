@@ -38,17 +38,20 @@
             <v-card-text v-if="isExpanded" class="pl-9">
                 <v-row>
                     <v-col cols="12" class="py-0">
-                        <v-autocomplete variant="outlined" :rules="[validation.required]" flat
+                        <!-- <v-autocomplete variant="outlined" :rules="[validation.required]" flat
                             v-model="editedTask.service_tasks" multiple label="Service Tasks*" item-value="id"
                             item-label="name" chips closable-chips :items="serviceTaskList">
                             <template v-slot:item="{ props, item }">
                                 <v-list-item v-bind="props" :subtitle="(item.raw.id as number)"
                                     :title="item.raw.name"></v-list-item>
                             </template>
-                            <template v-slot:chip="{ props, item }">
+<template v-slot:chip="{ props, item }">
                                 <v-chip v-bind="props" :text="item.raw.name" color="primary"></v-chip>
                             </template>
-                        </v-autocomplete>
+</v-autocomplete> -->
+                        <SharedInputServiceTaskAutoCompleteInput variant="outlined" density="comfortable"
+                            v-model="editedTask.service_tasks" multiple label="Select Service Task*"
+                            :rules="[validation.required]" chips closable-chips hide-selected />
                     </v-col>
                     <v-col cols="12" md="6">
                         <p class="mb-3">Time Interval*</p>
@@ -84,11 +87,13 @@
                         </v-row>
                     </v-col>
                     <v-col cols="12" md="6">
-                        <v-text-field :rules="[validation.required]" type="number" v-model="editedTask.primary_meter_interval" variant="outlined" density="compact"
+                        <v-text-field :rules="[validation.required]" type="number"
+                            v-model="editedTask.primary_meter_interval" variant="outlined" density="compact"
                             label="Primary meter interval*"></v-text-field>
                     </v-col>
                     <v-col cols="12" md="6">
-                        <v-text-field :rules="[validation.required]" type="number" v-model="editedTask.primary_meter_due_soon_threshhold" variant="outlined" density="compact"
+                        <v-text-field :rules="[validation.required]" type="number"
+                            v-model="editedTask.primary_meter_due_soon_threshhold" variant="outlined" density="compact"
                             label="Primary meter due soom threshbold*">
                             <template v-slot:append-inner>
                                 <span>{{ meterUnits }}</span>
